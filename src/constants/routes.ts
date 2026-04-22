@@ -1,0 +1,33 @@
+export const ROUTES = {
+  LOGIN: '/login',
+  FORGOT_PASSWORD: '/forgot-password',
+  RESET_PASSWORD: '/reset-password',
+  FORCE_RESET: '/force-reset',
+
+  SUPERADMIN_DASHBOARD: '/superadmin/dashboard',
+  SUPERADMIN_ADMINS: '/superadmin/admins',
+  SUPERADMIN_ADMINS_CREATE: '/superadmin/admins/create',
+  SUPERADMIN_ADMIN_DETAIL: (id: string) => `/superadmin/admins/${id}`,
+  SUPERADMIN_LOGS: '/superadmin/logs',
+
+  ADMIN_DASHBOARD: '/admin/dashboard',
+  ADMIN_CONTRACTORS: '/admin/contractors',
+  ADMIN_CONTRACTORS_CREATE: '/admin/contractors/create',
+  ADMIN_CONTRACTOR_DETAIL: (id: string) => `/admin/contractors/${id}`,
+  ADMIN_DEPARTMENTS: '/admin/departments',
+  ADMIN_DEPARTMENTS_CREATE: '/admin/departments/create',
+  ADMIN_DEPARTMENT_DETAIL: (id: string) => `/admin/departments/${id}`,
+  ADMIN_CATEGORIES: '/admin/categories',
+  ADMIN_CATEGORIES_CREATE: '/admin/categories/create',
+  ADMIN_CATEGORY_DETAIL: (id: string) => `/admin/categories/${id}`,
+  ADMIN_DOCUMENTS: '/admin/documents',
+  ADMIN_DOCUMENTS_UPLOAD: '/admin/documents/upload',
+  ADMIN_DOCUMENT_DETAIL: (id: string) => `/admin/documents/${id}`,
+  ADMIN_VIDEOS: '/admin/videos',
+  ADMIN_VIDEOS_UPLOAD: '/admin/videos/upload',
+  ADMIN_VIDEO_DETAIL: (id: string) => `/admin/videos/${id}`,
+
+  CONTRACTOR_HOME: '/home',
+  CONTRACTOR_DOCUMENT: (id: string) => `/documents/${id}`,
+  CONTRACTOR_VIDEO: (id: string) => `/videos/${id}`,
+} as const;

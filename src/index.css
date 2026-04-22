@@ -1,1 +1,25 @@
 @import "tailwindcss";
+
+@theme {
+  --color-lng-blue: #20505F;
+  --color-lng-blue-80: #4D737F;
+  --color-lng-blue-60: #79969F;
+  --color-lng-blue-40: #A6B9BF;
+  --color-lng-blue-20: #D2DCDF;
+
+  --color-lng-red: #B20E10;
+  --color-lng-red-80: #C13E40;
+  --color-lng-red-60: #D16E70;
+  --color-lng-red-40: #E09F9F;
+  --color-lng-red-20: #F0CFCF;
+
+  --color-lng-grey: #595959;
+  --color-lng-orange: #EA7125;
+  --color-lng-yellow: #FBCE07;
+
+  --font-sans: Arial, sans-serif;
+}
+
+* {
+  font-family: Arial, sans-serif;
+}
