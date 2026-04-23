@@ -78,7 +78,7 @@ export interface Document {
   category?: Category;
   department_access: DepartmentAccess;
   state: DocumentState;
-  blob_url: string;
+  document_url?: string;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -93,7 +93,7 @@ export interface Video {
   department_access: DepartmentAccess;
   is_live: boolean;
   upload_status: VideoUploadStatus;
-  thumbnail_url: string;
+  thumbnail_sas_url: string;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;

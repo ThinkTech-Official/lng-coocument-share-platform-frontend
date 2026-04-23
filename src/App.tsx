@@ -37,11 +37,9 @@ const ContractorsListPage   = lazy(() => import('./pages/admin/ContractorsListPa
 const CreateContractorPage  = lazy(() => import('./pages/admin/CreateContractorPage'));
 const ContractorDetailPage  = lazy(() => import('./pages/admin/ContractorDetailPage'));
 const DepartmentsListPage   = lazy(() => import('./pages/admin/DepartmentsListPage'));
-const CreateDepartmentPage  = lazy(() => import('./pages/admin/CreateDepartmentPage'));
-const DepartmentDetailPage  = lazy(() => import('./pages/admin/DepartmentDetailPage'));
+const DepartmentFormPage    = lazy(() => import('./pages/admin/DepartmentFormPage'));
 const CategoriesListPage    = lazy(() => import('./pages/admin/CategoriesListPage'));
-const CreateCategoryPage    = lazy(() => import('./pages/admin/CreateCategoryPage'));
-const CategoryDetailPage    = lazy(() => import('./pages/admin/CategoryDetailPage'));
+const CategoryFormPage      = lazy(() => import('./pages/admin/CategoryFormPage'));
 const DocumentsListPage     = lazy(() => import('./pages/admin/DocumentsListPage'));
 const UploadDocumentPage    = lazy(() => import('./pages/admin/UploadDocumentPage'));
 const DocumentDetailPage    = lazy(() => import('./pages/admin/DocumentDetailPage'));
@@ -49,7 +47,7 @@ const VideosListPage        = lazy(() => import('./pages/admin/VideosListPage'))
 const UploadVideoPage       = lazy(() => import('./pages/admin/UploadVideoPage'));
 const VideoDetailPage       = lazy(() => import('./pages/admin/VideoDetailPage'));
 
-const HomePage             = lazy(() => import('./pages/contractor/HomePage'));
+const HomePage             = lazy(() => import('./pages/contractor/HomepagePage'));
 const DocumentViewerPage   = lazy(() => import('./pages/contractor/DocumentViewerPage'));
 const VideoPlayerPage      = lazy(() => import('./pages/contractor/VideoPlayerPage'));
 
@@ -123,11 +121,11 @@ const router = createBrowserRouter(
           <Route path="/admin/contractors/create"    element={<CreateContractorPage />} />
           <Route path="/admin/contractors/:id"       element={<ContractorDetailPage />} />
           <Route path="/admin/departments"           element={<DepartmentsListPage />} />
-          <Route path="/admin/departments/create"    element={<CreateDepartmentPage />} />
-          <Route path="/admin/departments/:id"       element={<DepartmentDetailPage />} />
+          <Route path="/admin/departments/create"    element={<DepartmentFormPage />} />
+          <Route path="/admin/departments/:id"       element={<DepartmentFormPage />} />
           <Route path="/admin/categories"            element={<CategoriesListPage />} />
-          <Route path="/admin/categories/create"     element={<CreateCategoryPage />} />
-          <Route path="/admin/categories/:id"        element={<CategoryDetailPage />} />
+          <Route path="/admin/categories/create"     element={<CategoryFormPage />} />
+          <Route path="/admin/categories/:id"        element={<CategoryFormPage />} />
           <Route path="/admin/documents"             element={<DocumentsListPage />} />
           <Route path="/admin/documents/upload"      element={<UploadDocumentPage />} />
           <Route path="/admin/documents/:id"         element={<DocumentDetailPage />} />

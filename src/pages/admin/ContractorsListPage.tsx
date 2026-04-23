@@ -62,7 +62,7 @@ function ActionDialog({
 
 // ─── Department badges ────────────────────────────────────────────────────────
 
-function DeptBadges({ departments }: { departments: Department[] }) {
+function DeptBadges({ departments = [] }: { departments?: Department[] }) {
   if (departments.length === 0) {
     return <span className="text-xs italic text-lng-grey">No departments</span>;
   }
