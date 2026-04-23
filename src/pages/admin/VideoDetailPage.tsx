@@ -45,7 +45,7 @@ interface VideoFull extends Video {
 
 const editSchema = z.object({
   title:       z.string().min(2, 'Title must be at least 2 characters').max(200, 'Title is too long'),
-  description: z.string().max(500, 'Description cannot exceed 500 characters').optional().default(''),
+  description: z.string().max(500, 'Description cannot exceed 500 characters'),
   category_id: z.string().min(1, 'Please select a category'),
 });
 type EditForm = z.infer<typeof editSchema>;

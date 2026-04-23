@@ -37,13 +37,13 @@ const MAX_SIZE = 52_428_800; // 50 MB
 const schema = z
   .object({
     title:             z.string().min(2, 'Title must be at least 2 characters').max(200, 'Title is too long'),
-    description:       z.string().max(500, 'Description cannot exceed 500 characters').optional().default(''),
+    description:       z.string().max(500, 'Description cannot exceed 500 characters'),
     category_id:       z.string().min(1, 'Please select a category'),
     department_access: z.enum(['ALL', 'RESTRICTED']),
-    department_ids:    z.array(z.string()).optional().default([]),
+    department_ids:    z.array(z.string()),
   })
   .superRefine((data, ctx) => {
-    if (data.department_access === 'RESTRICTED' && (!data.department_ids || data.department_ids.length === 0)) {
+    if (data.department_access === 'RESTRICTED' && data.department_ids.length === 0) {
       ctx.addIssue({
         code:    z.ZodIssueCode.custom,
         message: 'Select at least one department',

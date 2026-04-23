@@ -24,7 +24,7 @@ const schema = z
       .min(2, 'Name must be at least 2 characters')
       .max(100, 'Name is too long'),
     sort_order: z
-      .number({ invalid_type_error: 'Sort order must be a number' })
+      .number({ error: 'Sort order must be a number' })
       .int('Sort order must be a whole number')
       .min(1, 'Sort order must be at least 1'),
   })

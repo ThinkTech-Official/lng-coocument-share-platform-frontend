@@ -16,7 +16,7 @@ import Modal from '../../components/ui/Modal';
 
 const schema = z.object({
   name:        z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name is too long'),
-  description: z.string().max(500, 'Description cannot exceed 500 characters').optional().default(''),
+  description: z.string().max(500, 'Description cannot exceed 500 characters'),
 });
 
 type FormValues = z.infer<typeof schema>;

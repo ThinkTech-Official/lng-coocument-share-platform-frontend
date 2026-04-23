@@ -19,7 +19,6 @@ import {
 import { getDocument } from '../../api/documents';
 import Spinner from '../../components/ui/Spinner';
 import Button from '../../components/ui/Button';
-import type { Document } from '../../types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

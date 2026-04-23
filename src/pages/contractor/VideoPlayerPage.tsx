@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import { getVideo, getVideoStream } from '../../api/videos';
 import Button from '../../components/ui/Button';
-import type { Video } from '../../types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -208,19 +207,13 @@ export default function VideoPlayerPage() {
           onContextMenu={(e) => e.preventDefault()}
         >
           <ReactPlayer
-            url={streamUrl}
+            src={streamUrl}
             width="100%"
             height="100%"
             controls
             playing={false}
-            config={{
-              file: {
-                attributes: {
-                  controlsList: 'nodownload',
-                  disablePictureInPicture: true,
-                } as React.VideoHTMLAttributes<HTMLVideoElement>,
-              },
-            }}
+            disablePictureInPicture
+            controlsList="nodownload"
             onError={handlePlayerError}
           />
 

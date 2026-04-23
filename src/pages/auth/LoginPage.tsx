@@ -53,8 +53,8 @@ export default function LoginPage() {
 
   const { mutate, isPending } = useMutation({
     mutationFn: (data: LoginForm) => login(data.email, data.password),
-    onSuccess: ({ user }) => {
-      setAuth(user);
+    onSuccess: ({ access_token, user }) => {
+      setAuth(user, access_token);
       toast.success(`Welcome back, ${user.name}`);
       navigate(user.force_password_reset ? '/force-reset' : dashboardFor(user.role), { replace: true });
     },
