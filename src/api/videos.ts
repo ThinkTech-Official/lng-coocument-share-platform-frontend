@@ -2,7 +2,7 @@ import apiClient from './axios';
 import { type Video, type DepartmentAccess, type ListParams } from '../types';
 
 interface VideoStreamResponse {
-  url: string;
+  stream_url: string;
 }
 
 export const getVideos = (params?: ListParams) =>

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
-import ReactPlayer from 'react-player';
 import {
   ArrowLeft,
   Loader2,
@@ -69,7 +68,7 @@ export default function VideoPlayerPage() {
 
   // Clear refreshing overlay once stream refetch completes after a player error
   useEffect(() => {
-    if (isRefreshing && !streamQuery.isFetching && streamQuery.data?.url) {
+    if (isRefreshing && !streamQuery.isFetching && streamQuery.data?.stream_url) {
       setIsRefreshing(false);
     }
   }, [isRefreshing, streamQuery.isFetching, streamQuery.data?.url]);
@@ -183,7 +182,7 @@ export default function VideoPlayerPage() {
 
   // ── Success ──
   const video = videoQuery.data!;
-  const streamUrl = streamQuery.data!.url;
+  const streamUrl = streamQuery.data!.stream_url;
   const categoryLabel = video.category?.name ?? 'Uncategorized';
 
   return (
@@ -206,12 +205,11 @@ export default function VideoPlayerPage() {
           className="relative aspect-video rounded-lg overflow-hidden shadow-lg bg-black mb-6"
           onContextMenu={(e) => e.preventDefault()}
         >
-          <ReactPlayer
+          <video
+            key={streamUrl}
             src={streamUrl}
-            width="100%"
-            height="100%"
+            style={{ width: '100%', height: '100%' }}
             controls
-            playing={false}
             disablePictureInPicture
             controlsList="nodownload"
             onError={handlePlayerError}
