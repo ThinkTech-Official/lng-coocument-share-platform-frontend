@@ -15,9 +15,8 @@ import {
 import toast from 'react-hot-toast';
 import { getDocuments, getDocument } from '../../api/documents';
 import { getVideos } from '../../api/videos';
-import { getCategoriesPublic } from '../../api/categories';
 import { useAuthStore } from '../../store/authStore';
-import type { Document, Video as Vid, Category } from '../../types';
+import type { Document, Video as Vid } from '../../types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -30,39 +29,36 @@ function fileIcon(blobUrl: string) {
   return <File className="h-5 w-5 text-lng-grey" />;
 }
 
-function buildCatMap(categories: Category[]): Map<string, Category> {
-  const map = new Map<string, Category>();
-  for (const cat of categories) {
-    map.set(cat.id, cat);
-    for (const sub of cat.subcategories ?? []) {
-      map.set(sub.id, sub);
-    }
-  }
-  return map;
-}
+function groupByCategory<T extends { category?: { id: string; name: string; parent_category_id: string | null; parent?: { id: string; name: string } | null } | null }>(
+  items: T[]
+): { label: string; items: T[] }[] {
+  const groups: Record<string, { label: string; items: T[] }> = {};
 
-function groupBy<T extends { category_id: string }>(
-  items: T[],
-  catMap: Map<string, Category>
-): { cat: Category | null; label: string; items: T[] }[] {
-  const groups = new Map<string | null, T[]>();
   for (const item of items) {
-    const key = item.category_id ?? null;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(item);
+    if (!item.category) {
+      if (!groups['uncategorized']) {
+        groups['uncategorized'] = { label: 'Uncategorized', items: [] };
+      }
+      groups['uncategorized'].items.push(item);
+      continue;
+    }
+
+    const rootId = item.category.parent ? item.category.parent.id : item.category.id;
+    const rootName = item.category.parent ? item.category.parent.name : item.category.name;
+
+    if (!groups[rootId]) {
+      groups[rootId] = { label: rootName, items: [] };
+    }
+    groups[rootId].items.push(item);
   }
-  const result: { cat: Category | null; label: string; items: T[] }[] = [];
-  for (const [catId, grpItems] of groups) {
-    const cat = catId ? (catMap.get(catId) ?? null) : null;
-    result.push({ cat, label: cat?.name ?? 'Uncategorized', items: grpItems });
-  }
-  result.sort((a, b) => {
-    if (!a.cat && !b.cat) return 0;
-    if (!a.cat) return 1;
-    if (!b.cat) return -1;
-    return (a.cat.sort_order ?? 0) - (b.cat.sort_order ?? 0);
-  });
-  return result;
+
+  return Object.entries(groups)
+    .sort(([aKey, aVal], [bKey, bVal]) => {
+      if (aKey === 'uncategorized') return 1;
+      if (bKey === 'uncategorized') return -1;
+      return aVal.label.localeCompare(bVal.label);
+    })
+    .map(([, val]) => val);
 }
 
 // ─── Skeleton cards ───────────────────────────────────────────────────────────
@@ -108,7 +104,9 @@ function DocCard({
         {fileIcon(doc.document_url ?? '')}
         {doc.category && (
           <span className="text-xs text-lng-grey bg-gray-100 rounded px-1.5 py-0.5 truncate max-w-[110px]">
-            {doc.category.name}
+            {doc.category.parent
+              ? `${doc.category.parent.name} > ${doc.category.name}`
+              : doc.category.name}
           </span>
         )}
       </div>
@@ -219,13 +217,6 @@ export default function HomepagePage() {
 
   // Queries
   const {
-    data: categories = [],
-  } = useQuery({
-    queryKey: ['categories-public'],
-    queryFn: getCategoriesPublic,
-  });
-
-  const {
     data: documents = [],
     isLoading: docsLoading,
     isError: docsError,
@@ -242,8 +233,6 @@ export default function HomepagePage() {
     queryKey: ['contractor-videos'],
     queryFn: () => getVideos(),
   });
-
-  const catMap = useMemo(() => buildCatMap(categories), [categories]);
 
   // Client-side search filtering
   const filteredDocs = useMemo(() => {
@@ -266,8 +255,8 @@ export default function HomepagePage() {
     );
   }, [videos, search]);
 
-  const groupedDocs = useMemo(() => groupBy(filteredDocs, catMap), [filteredDocs, catMap]);
-  const groupedVids = useMemo(() => groupBy(filteredVids, catMap), [filteredVids, catMap]);
+  const groupedDocs = useMemo(() => groupByCategory(filteredDocs), [filteredDocs]);
+  const groupedVids = useMemo(() => groupByCategory(filteredVids), [filteredVids]);
 
   // Open document — logs DOCUMENT_VIEWED via GET /documents/:id
   const handleOpenDoc = useCallback(

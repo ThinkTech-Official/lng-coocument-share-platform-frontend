@@ -19,7 +19,7 @@ import {
   X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { type Document, type Department, DocumentState, DepartmentAccess } from '../../types';
+import { type Document, DocumentState, DepartmentAccess } from '../../types';
 import { getDocument, updateDocument, updateDocumentStatus, deleteDocument } from '../../api/documents';
 import { getCategories } from '../../api/categories';
 import { getDepartments } from '../../api/departments';
@@ -45,11 +45,6 @@ const ALLOWED_TYPES = [
 ];
 const MAX_SIZE = 52_428_800; // 50 MB
 
-// ─── Local types ──────────────────────────────────────────────────────────────
-
-interface DocumentFull extends Document {
-  departments?: Department[];
-}
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -252,10 +247,10 @@ export default function DocumentDetailPage() {
     reset({
       title:       doc.title,
       description: doc.description ?? '',
-      category_id: doc.category_id,
+      category_id: doc.category_id ?? doc.category?.id ?? '',
     });
-    const access = doc.department_access as DepartmentAccess;
-    const ids    = ((doc as DocumentFull).departments ?? []).map((d) => d.id);
+    const access = (doc.access_type ?? DepartmentAccess.ALL) as DepartmentAccess;
+    const ids    = (doc.document_departments ?? []).map((dd: any) => dd.department_id);
     setOrigAccess(access);
     setLocalAccess(access);
     setOrigDeptIds(ids);

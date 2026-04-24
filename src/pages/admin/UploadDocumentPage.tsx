@@ -231,9 +231,12 @@ export default function UploadDocumentPage() {
     fd.append('title', data.title);
     if (data.description) fd.append('description', data.description);
     fd.append('category_id', data.category_id);
-    fd.append('department_access', data.department_access);
+    fd.append('access_type', data.department_access);
     if (data.department_access === 'RESTRICTED' && data.department_ids) {
-      data.department_ids.forEach((id) => fd.append('department_ids[]', id));
+      data.department_ids.forEach((id) => fd.append('department_ids', id));
+    }
+    for (const [key, value] of fd.entries()) {
+      console.log('FormData entry:', key, value);
     }
     uploadMutation.mutate(fd);
   };

@@ -71,7 +71,7 @@ export default function VideoPlayerPage() {
     if (isRefreshing && !streamQuery.isFetching && streamQuery.data?.stream_url) {
       setIsRefreshing(false);
     }
-  }, [isRefreshing, streamQuery.isFetching, streamQuery.data?.url]);
+  }, [isRefreshing, streamQuery.isFetching, streamQuery.data?.stream_url]);
 
   const handlePlayerError = () => {
     setIsRefreshing(true);

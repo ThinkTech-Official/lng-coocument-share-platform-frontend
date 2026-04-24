@@ -30,7 +30,13 @@ export const reuploadDocument = (id: string, formData: FormData) =>
 export const updateDocumentStatus = (id: string, state: DocumentState) =>
   apiClient.patch<Document>(`/documents/${id}/status`, { state }).then((r) => r.data);
 
-export const updateDocumentDepartments = (id: string, data: { department_access: DepartmentAccess }) =>
+export const updateDocumentDepartments = (
+  id: string,
+  data: {
+    access_type: DepartmentAccess;
+    department_ids?: string[];
+  }
+) =>
   apiClient.patch<Document>(`/documents/${id}/departments`, data).then((r) => r.data);
 
 export const deleteDocument = (id: string) =>

@@ -44,6 +44,7 @@ export interface Category {
   id: string;
   name: string;
   parent_category_id: string | null;
+  parent?: { id: string; name: string } | null;
   sort_order: number;
   created_at: string;
   deleted_at: string | null;
@@ -76,7 +77,11 @@ export interface Document {
   description: string;
   category_id: string;
   category?: Category;
-  department_access: DepartmentAccess;
+  access_type: DepartmentAccess;
+  document_departments?: Array<{
+    department_id: string;
+    department: { id: string; name: string };
+  }>;
   state: DocumentState;
   document_url?: string;
   created_at: string;

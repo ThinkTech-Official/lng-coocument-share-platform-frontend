@@ -172,7 +172,7 @@ export default function DocumentsListPage() {
   const filteredDocuments = useMemo(() => {
     if (!documents) return [];
     if (!accessFilter) return documents;
-    return documents.filter((d) => d.department_access === accessFilter);
+    return documents.filter((d) => d.access_type === accessFilter);
   }, [documents, accessFilter]);
 
   // ─── Selection helpers ────────────────────────────────────────────────────
@@ -558,7 +558,7 @@ export default function DocumentsListPage() {
 
                     {/* Access */}
                     <td className="px-4 py-3">
-                      {doc.department_access === 'ALL' ? (
+                      {doc.access_type === 'ALL' ? (
                         <Badge variant="info">All Departments</Badge>
                       ) : (
                         <Badge variant="neutral">Restricted</Badge>
