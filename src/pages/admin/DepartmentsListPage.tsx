@@ -64,7 +64,7 @@ function DeptCard({ dept, onEdit, onDelete, deleting }: DeptCardProps) {
   return (
     <div className="flex flex-col rounded-lg border-l-4 border-lng-blue bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
       {/* Name */}
-      <h3 className="mb-1 line-clamp-2 text-base font-bold text-lng-grey break-words">
+      <h3 className="mb-1 line-clamp-2 text-base font-bold text-lng-grey break-word">
         {dept.name}
       </h3>
 
