@@ -22,18 +22,19 @@ import {
   type Category,
   VideoUploadStatus,
   DepartmentAccess,
-} from '../../types';
-import { getVideo, updateVideo, updateVideoStatus, deleteVideo } from '../../api/videos';
-import { getCategories } from '../../api/categories';
-import { getDepartments } from '../../api/departments';
-import apiClient from '../../api/axios';
-import Input from '../../components/ui/Input';
-import Button from '../../components/ui/Button';
-import Badge from '../../components/ui/Badge';
-import PageHeader from '../../components/ui/PageHeader';
-import Spinner from '../../components/ui/Spinner';
-import Modal from '../../components/ui/Modal';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
+} from '../../../types';
+import { getVideo, updateVideo, updateVideoStatus, deleteVideo } from '../../../api/videos';
+import { getCategories } from '../../../api/categories';
+import { getDepartments } from '../../../api/departments';
+import apiClient from '../../../api/axios';
+import Input from '../../../components/ui/Input';
+import Button from '../../../components/ui/Button';
+import Badge from '../../../components/ui/Badge';
+import PageHeader from '../../../components/ui/PageHeader';
+import Spinner from '../../../components/ui/Spinner';
+import Modal from '../../../components/ui/Modal';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import Toggle from '../../../components/ui/Toggle';
 
 // ─── Local types ──────────────────────────────────────────────────────────────
 
@@ -673,33 +674,18 @@ export default function VideoDetailPage() {
                   : 'Live toggle unavailable until upload is complete.'}
               </p>
 
-              {/* Toggle button */}
+              {/* Live Toggle */}
               {isReady ? (
-                video.is_live ? (
-                  <Button
-                    type="button"
-                    variant="danger"
-                    className="w-full"
-                    disabled={anyPending}
-                    loading={liveMutation.isPending}
-                    onClick={() => setShowOfflineConfirm(true)}
-                  >
-                    <EyeOff size={14} />
-                    Take Offline
-                  </Button>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="primary"
-                    className="w-full"
-                    disabled={anyPending}
-                    loading={liveMutation.isPending}
-                    onClick={() => liveMutation.mutate(true)}
-                  >
-                    <Radio size={14} />
-                    Go Live
-                  </Button>
-                )
+                <Toggle
+                  label={video.is_live ? "Video is Live" : "Video is Offline"}
+                  description={video.is_live ? "Contractors can stream this video." : "Video is hidden from contractors."}
+                  checked={video.is_live}
+                  onChange={(checked) => {
+                    if (!checked) setShowOfflineConfirm(true);
+                    else liveMutation.mutate(true);
+                  }}
+                  disabled={anyPending}
+                />
               ) : (
                 <Button
                   type="button"
@@ -728,26 +714,14 @@ export default function VideoDetailPage() {
                     : <Badge variant="neutral">Restricted</Badge>}
                 </div>
 
-                {/* Segmented toggle */}
-                <div className="inline-flex w-full overflow-hidden rounded border border-gray-300">
-                  {([DepartmentAccess.ALL, DepartmentAccess.RESTRICTED] as const).map((val) => (
-                    <button
-                      key={val}
-                      type="button"
-                      disabled={anyPending || !isReady}
-                      onClick={() => handleAccessToggle(val)}
-                      className={`
-                        flex-1 py-2 text-sm font-medium transition-colors
-                        ${localAccess === val
-                          ? 'bg-lng-blue text-white'
-                          : 'bg-white text-lng-grey hover:bg-gray-50'}
-                        disabled:opacity-50 disabled:cursor-not-allowed
-                      `}
-                    >
-                      {val === DepartmentAccess.ALL ? 'All Departments' : 'Restricted'}
-                    </button>
-                  ))}
-                </div>
+                {/* Restrict Access Toggle */}
+                <Toggle
+                  label="Restrict Access"
+                  description="Only allow specific departments to view this video."
+                  checked={localAccess === DepartmentAccess.RESTRICTED}
+                  onChange={(checked) => handleAccessToggle(checked ? DepartmentAccess.RESTRICTED : DepartmentAccess.ALL)}
+                  disabled={anyPending || !isReady}
+                />
 
                 {/* Department checkboxes */}
                 <div

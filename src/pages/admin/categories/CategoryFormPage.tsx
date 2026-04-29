@@ -6,12 +6,12 @@ import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Plus, Save, AlertCircle, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getCategory, getCategories, createCategory, updateCategory } from '../../api/categories';
-import Input from '../../components/ui/Input';
-import Button from '../../components/ui/Button';
-import Badge from '../../components/ui/Badge';
-import PageHeader from '../../components/ui/PageHeader';
-import Modal from '../../components/ui/Modal';
+import { getCategory, getCategories, createCategory, updateCategory } from '../../../api/categories';
+import Input from '../../../components/ui/Input';
+import Button from '../../../components/ui/Button';
+import Badge from '../../../components/ui/Badge';
+import PageHeader from '../../../components/ui/PageHeader';
+import Modal from '../../../components/ui/Modal';
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 

@@ -5,8 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  ArrowLeft, ArrowRight, Save, AlertCircle, AlertTriangle,
-  UserX, UserCheck, Trash2, Info,
+  ArrowLeft, ArrowRight, Save, AlertCircle, AlertTriangle, Trash2, Info,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -15,15 +14,16 @@ import {
   updateContractorStatus,
   updateContractorDepartments,
   deleteContractor,
-} from '../../api/contractors';
-import { getDepartments } from '../../api/departments';
-import Input from '../../components/ui/Input';
-import Button from '../../components/ui/Button';
-import PageHeader from '../../components/ui/PageHeader';
-import Badge from '../../components/ui/Badge';
-import Spinner from '../../components/ui/Spinner';
-import Modal from '../../components/ui/Modal';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
+} from '../../../api/contractors';
+import { getDepartments } from '../../../api/departments';
+import Input from '../../../components/ui/Input';
+import Button from '../../../components/ui/Button';
+import PageHeader from '../../../components/ui/PageHeader';
+import Badge from '../../../components/ui/Badge';
+import Spinner from '../../../components/ui/Spinner';
+import Modal from '../../../components/ui/Modal';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import Toggle from '../../../components/ui/Toggle';
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -457,25 +457,14 @@ export default function ContractorDetailPage() {
                 {contractor.is_active ? 'Active' : 'Inactive'}
               </Badge>
 
-              <p className="text-sm text-lng-grey">
-                {contractor.is_active
-                  ? 'This contractor can log in and view documents and videos.'
-                  : 'This contractor cannot log in.'}
-              </p>
-
-              <Button
-                type="button"
-                variant={contractor.is_active ? 'danger' : 'primary'}
-                className="w-full justify-center"
+              {/* Active Status Toggle */}
+              <Toggle
+                label={contractor.is_active ? "Account Active" : "Account Inactive"}
+                description={contractor.is_active ? "Contractor can log in and view content." : "Contractor cannot log in."}
+                checked={contractor.is_active}
+                onChange={() => setStatusDialog(true)}
                 disabled={anyPending}
-                onClick={() => setStatusDialog(true)}
-              >
-                {contractor.is_active ? (
-                  <><UserX size={14} /> Deactivate Contractor</>
-                ) : (
-                  <><UserCheck size={14} /> Activate Contractor</>
-                )}
-              </Button>
+              />
             </div>
           </div>
 

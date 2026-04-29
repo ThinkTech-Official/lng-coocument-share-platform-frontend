@@ -6,13 +6,13 @@ import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ArrowRight, UserPlus, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { createContractor } from '../../api/contractors';
-import { getDepartments } from '../../api/departments';
-import Input from '../../components/ui/Input';
-import Button from '../../components/ui/Button';
-import PageHeader from '../../components/ui/PageHeader';
-import Spinner from '../../components/ui/Spinner';
-import Modal from '../../components/ui/Modal';
+import { createContractor } from '../../../api/contractors';
+import { getDepartments } from '../../../api/departments';
+import Input from '../../../components/ui/Input';
+import Button from '../../../components/ui/Button';
+import PageHeader from '../../../components/ui/PageHeader';
+import Spinner from '../../../components/ui/Spinner';
+import Modal from '../../../components/ui/Modal';
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 

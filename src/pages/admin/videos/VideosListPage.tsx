@@ -8,14 +8,15 @@ import {
   AlertCircle, Video as VideoIcon, X, Radio, Loader2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { type Video, type Category, VideoUploadStatus } from '../../types';
-import { getVideos, updateVideoStatus, deleteVideo } from '../../api/videos';
-import { getCategories } from '../../api/categories';
-import PageHeader from '../../components/ui/PageHeader';
-import Button from '../../components/ui/Button';
-import Badge from '../../components/ui/Badge';
-import EmptyState from '../../components/ui/EmptyState';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { type Video, type Category, VideoUploadStatus } from '../../../types';
+import { getVideos, updateVideoStatus, deleteVideo } from '../../../api/videos';
+import { getCategories } from '../../../api/categories';
+import PageHeader from '../../../components/ui/PageHeader';
+import Button from '../../../components/ui/Button';
+import Badge from '../../../components/ui/Badge';
+import EmptyState from '../../../components/ui/EmptyState';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import Toggle from '../../../components/ui/Toggle';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -185,46 +186,26 @@ function VideoCard({
           Edit
         </Button>
 
-        {/* Live toggle */}
-        {isReady ? (
-          video.is_live ? (
-            <Button
-              variant="danger"
+        {/* Live Toggle */}
+        <div className="flex-1">
+          {isReady ? (
+            <Toggle
               size="sm"
+              label={video.is_live ? "Live" : "Offline"}
+              checked={video.is_live}
+              onChange={(checked) => {
+                if (!checked) onTakeOffline(video);
+                else onGoLive(video);
+              }}
               disabled={isPending}
-              onClick={() => onTakeOffline(video)}
-            >
-              <EyeOff size={13} />
-              Take Offline
-            </Button>
+            />
           ) : (
-            <Button
-              variant="primary"
-              size="sm"
-              disabled={isPending}
-              onClick={() => onGoLive(video)}
-            >
-              <Radio size={13} />
-              Go Live
-            </Button>
-          )
-        ) : (
-          <Button
-            variant="outline"
-            size="sm"
-            disabled
-            title={
-              isFailed
-                ? 'Video upload failed — delete and re-upload'
-                : isUploading
-                ? 'Video is still uploading'
-                : 'Video is not ready yet'
-            }
-          >
-            <Radio size={13} />
-            {video.is_live ? 'Take Offline' : 'Go Live'}
-          </Button>
-        )}
+            <div className="flex items-center gap-1.5 text-xs text-gray-400">
+              <Radio size={12} />
+              {isUploading ? 'Uploading…' : 'Not Ready'}
+            </div>
+          )}
+        </div>
 
         {/* Delete — icon-only for normal cards, full danger button for FAILED */}
         {isFailed ? (

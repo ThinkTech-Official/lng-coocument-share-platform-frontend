@@ -5,13 +5,13 @@ import {
   Plus, Search, Pencil, Trash2, Building2, AlertCircle, AlertTriangle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { type Department } from '../../types';
-import { getDepartments, deleteDepartment } from '../../api/departments';
-import PageHeader from '../../components/ui/PageHeader';
-import Button from '../../components/ui/Button';
-import EmptyState from '../../components/ui/EmptyState';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
-import Modal from '../../components/ui/Modal';
+import { type Department } from '../../../types';
+import { getDepartments, deleteDepartment } from '../../../api/departments';
+import PageHeader from '../../../components/ui/PageHeader';
+import Button from '../../../components/ui/Button';
+import EmptyState from '../../../components/ui/EmptyState';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import Modal from '../../../components/ui/Modal';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

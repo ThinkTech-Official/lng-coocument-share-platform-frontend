@@ -9,15 +9,16 @@ import {
   Image as ImageIcon, X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { type Document } from '../../types';
-import { getCategories } from '../../api/categories';
-import { getDepartments } from '../../api/departments';
-import apiClient from '../../api/axios';
-import Input from '../../components/ui/Input';
-import Button from '../../components/ui/Button';
-import PageHeader from '../../components/ui/PageHeader';
-import Spinner from '../../components/ui/Spinner';
-import Modal from '../../components/ui/Modal';
+import { type Document } from '../../../types';
+import { getCategories } from '../../../api/categories';
+import { getDepartments } from '../../../api/departments';
+import apiClient from '../../../api/axios';
+import Input from '../../../components/ui/Input';
+import Button from '../../../components/ui/Button';
+import PageHeader from '../../../components/ui/PageHeader';
+import Spinner from '../../../components/ui/Spinner';
+import Modal from '../../../components/ui/Modal';
+import Toggle from '../../../components/ui/Toggle';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -356,32 +357,19 @@ export default function UploadDocumentPage() {
                   )}
                 </div>
 
-                {/* Department Access toggle */}
+                {/* Department Access Toggle */}
                 <div className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-lng-grey">
-                    Department Access <span className="text-lng-red">*</span>
-                  </span>
-                  <div className="inline-flex overflow-hidden rounded border border-gray-300">
-                    {(['ALL', 'RESTRICTED'] as const).map((val) => (
-                      <button
-                        key={val}
-                        type="button"
-                        disabled={isUploading}
-                        onClick={() => {
-                          accessField.onChange(val);
-                          if (val === 'ALL') deptIdsField.onChange([]);
-                        }}
-                        className={`
-                          px-5 py-2 text-sm font-medium transition-colors
-                          ${watchAccess === val
-                            ? 'bg-lng-blue text-white'
-                            : 'bg-white text-lng-grey hover:bg-gray-50'}
-                        `}
-                      >
-                        {val === 'ALL' ? 'All Departments' : 'Restricted'}
-                      </button>
-                    ))}
-                  </div>
+                  <Toggle
+                    label="Restrict Access"
+                    description="Only allow specific departments to view this document."
+                    checked={watchAccess === 'RESTRICTED'}
+                    onChange={(checked) => {
+                      const val = checked ? 'RESTRICTED' : 'ALL';
+                      accessField.onChange(val);
+                      if (val === 'ALL') deptIdsField.onChange([]);
+                    }}
+                    disabled={isUploading}
+                  />
                 </div>
 
                 {/* Department checkboxes — animated slide down */}

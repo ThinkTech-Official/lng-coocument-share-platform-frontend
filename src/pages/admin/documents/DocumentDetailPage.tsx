@@ -19,18 +19,19 @@ import {
   X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { type Document, DocumentState, DepartmentAccess } from '../../types';
-import { getDocument, updateDocument, updateDocumentStatus, deleteDocument } from '../../api/documents';
-import { getCategories } from '../../api/categories';
-import { getDepartments } from '../../api/departments';
-import apiClient from '../../api/axios';
-import Input from '../../components/ui/Input';
-import Button from '../../components/ui/Button';
-import Badge from '../../components/ui/Badge';
-import PageHeader from '../../components/ui/PageHeader';
-import Spinner from '../../components/ui/Spinner';
-import Modal from '../../components/ui/Modal';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { type Document, DocumentState, DepartmentAccess } from '../../../types';
+import { getDocument, updateDocument, updateDocumentStatus, deleteDocument } from '../../../api/documents';
+import { getCategories } from '../../../api/categories';
+import { getDepartments } from '../../../api/departments';
+import apiClient from '../../../api/axios';
+import Input from '../../../components/ui/Input';
+import Button from '../../../components/ui/Button';
+import Badge from '../../../components/ui/Badge';
+import PageHeader from '../../../components/ui/PageHeader';
+import Spinner from '../../../components/ui/Spinner';
+import Modal from '../../../components/ui/Modal';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import Toggle from '../../../components/ui/Toggle';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -887,26 +888,14 @@ export default function DocumentDetailPage() {
                   : <Badge variant="neutral">Restricted</Badge>}
               </div>
 
-              {/* Segmented toggle */}
-              <div className="inline-flex overflow-hidden rounded border border-gray-300 w-full">
-                {([DepartmentAccess.ALL, DepartmentAccess.RESTRICTED] as const).map((val) => (
-                  <button
-                    key={val}
-                    type="button"
-                    disabled={anyPending}
-                    onClick={() => handleAccessToggle(val)}
-                    className={`
-                      flex-1 py-2 text-sm font-medium transition-colors
-                      ${localAccess === val
-                        ? 'bg-lng-blue text-white'
-                        : 'bg-white text-lng-grey hover:bg-gray-50'}
-                      disabled:opacity-50 disabled:cursor-not-allowed
-                    `}
-                  >
-                    {val === DepartmentAccess.ALL ? 'All Departments' : 'Restricted'}
-                  </button>
-                ))}
-              </div>
+              {/* Restrict Access Toggle */}
+              <Toggle
+                label="Restrict Access"
+                description="Only allow specific departments to view this document."
+                checked={localAccess === DepartmentAccess.RESTRICTED}
+                onChange={(checked) => handleAccessToggle(checked ? DepartmentAccess.RESTRICTED : DepartmentAccess.ALL)}
+                disabled={anyPending}
+              />
 
               {/* Department checkboxes */}
               <div

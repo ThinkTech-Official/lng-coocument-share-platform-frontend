@@ -6,11 +6,11 @@ import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Plus, Save, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getDepartment, createDepartment, updateDepartment } from '../../api/departments';
-import Input from '../../components/ui/Input';
-import Button from '../../components/ui/Button';
-import PageHeader from '../../components/ui/PageHeader';
-import Modal from '../../components/ui/Modal';
+import { getDepartment, createDepartment, updateDepartment } from '../../../api/departments';
+import Input from '../../../components/ui/Input';
+import Button from '../../../components/ui/Button';
+import PageHeader from '../../../components/ui/PageHeader';
+import Modal from '../../../components/ui/Modal';
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 

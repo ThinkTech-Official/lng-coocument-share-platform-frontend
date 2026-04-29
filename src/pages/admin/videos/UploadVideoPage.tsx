@@ -9,15 +9,15 @@ import {
   Image as ImageIcon, X, Info, AlertTriangle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { type Video } from '../../types';
-import { getCategories } from '../../api/categories';
-import { getDepartments } from '../../api/departments';
-import apiClient from '../../api/axios';
-import Input from '../../components/ui/Input';
-import Button from '../../components/ui/Button';
-import PageHeader from '../../components/ui/PageHeader';
-import Spinner from '../../components/ui/Spinner';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { type Video } from '../../../types';
+import { getCategories } from '../../../api/categories';
+import { getDepartments } from '../../../api/departments';
+import apiClient from '../../../api/axios';
+import Input from '../../../components/ui/Input';
+import Button from '../../../components/ui/Button';
+import PageHeader from '../../../components/ui/PageHeader';
+import Spinner from '../../../components/ui/Spinner';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
