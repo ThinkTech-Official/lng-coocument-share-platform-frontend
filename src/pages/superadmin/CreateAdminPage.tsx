@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useBlocker } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,7 +10,6 @@ import { createAdmin } from '../../api/admins';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import PageHeader from '../../components/ui/PageHeader';
-import Modal from '../../components/ui/Modal';
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -26,7 +25,6 @@ type CreateForm = z.infer<typeof schema>;
 export default function CreateAdminPage() {
   const navigate     = useNavigate();
   const queryClient  = useQueryClient();
-  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     document.title = 'Create Admin — LNG Canada';
@@ -37,17 +35,13 @@ export default function CreateAdminPage() {
     register,
     handleSubmit,
     setError,
-    formState: { errors, isDirty },
+    formState: { errors },
   } = useForm<CreateForm>({
     resolver: zodResolver(schema),
     mode: 'onSubmit',
   });
 
-  // Block navigation when form is dirty and not yet submitted
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      isDirty && !submitted && currentLocation.pathname !== nextLocation.pathname
-  );
+
 
   const { mutate, isPending } = useMutation({
     mutationFn: ({ name, email }: CreateForm) =>
@@ -55,7 +49,6 @@ export default function CreateAdminPage() {
 
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admins'] });
-      setSubmitted(true);
       toast.success(
         `Admin account created. A temporary password has been sent to ${variables.email}.`
       );
@@ -147,34 +140,13 @@ export default function CreateAdminPage() {
               loading={isPending}
               disabled={isPending}
             >
-              <UserPlus size={14} />
+              {!isPending && <UserPlus size={14} />}
               Create Admin
             </Button>
           </div>
         </form>
       </div>
 
-      {/* Unsaved changes dialog */}
-      <Modal
-        open={blocker.state === 'blocked'}
-        onClose={() => blocker.reset?.()}
-        title="Discard Changes"
-        maxWidth="sm"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => blocker.reset?.()}>
-              Keep Editing
-            </Button>
-            <Button variant="danger" onClick={() => blocker.proceed?.()}>
-              Discard
-            </Button>
-          </>
-        }
-      >
-        <p className="text-sm text-lng-grey">
-          You have unsaved changes. Are you sure you want to leave?
-        </p>
-      </Modal>
     </>
   );
 }

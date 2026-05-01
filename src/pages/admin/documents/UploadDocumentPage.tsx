@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useBlocker } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useForm, useController, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,7 +17,6 @@ import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import PageHeader from '../../../components/ui/PageHeader';
 import Spinner from '../../../components/ui/Spinner';
-import Modal from '../../../components/ui/Modal';
 import Toggle from '../../../components/ui/Toggle';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -81,7 +80,6 @@ export default function UploadDocumentPage() {
   const [fileError, setFileError] = useState<string | null>(null);
   const [dragOver, setDragOver]   = useState(false);
   const [progress, setProgress]   = useState<number | null>(null);
-  const [submitted, setSubmitted] = useState(false);
 
   const fileInputRef   = useRef<HTMLInputElement>(null);
   const dragCounterRef = useRef(0);
@@ -113,7 +111,7 @@ export default function UploadDocumentPage() {
     register,
     handleSubmit,
     control,
-    formState: { errors, isDirty },
+    formState: { errors },
   } = useForm<FormValues>({
     resolver:      zodResolver(schema),
     defaultValues: {
@@ -161,7 +159,6 @@ export default function UploadDocumentPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['documents'] });
-      setSubmitted(true);
       toast.success('Document uploaded successfully');
       navigate('/admin/documents');
     },
@@ -210,15 +207,6 @@ export default function UploadDocumentPage() {
     const dropped = e.dataTransfer.files[0];
     if (dropped) validateAndSetFile(dropped);
   };
-
-  // ─── Unsaved changes blocker ──────────────────────────────────────────────
-
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      !submitted &&
-      (isDirty || !!file) &&
-      currentLocation.pathname !== nextLocation.pathname,
-  );
 
   // ─── Submit ───────────────────────────────────────────────────────────────
 
@@ -559,23 +547,6 @@ export default function UploadDocumentPage() {
         </div>
       </form>
 
-      {/* ── Unsaved changes dialog ─────────────────────────────────────── */}
-      <Modal
-        open={blocker.state === 'blocked'}
-        onClose={() => blocker.reset?.()}
-        title="Discard Upload"
-        maxWidth="sm"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => blocker.reset?.()}>Keep Editing</Button>
-            <Button variant="danger"  onClick={() => blocker.proceed?.()}>Discard</Button>
-          </>
-        }
-      >
-        <p className="text-sm text-lng-grey">
-          You have unsaved changes. Are you sure you want to leave?
-        </p>
-      </Modal>
     </>
   );
 }

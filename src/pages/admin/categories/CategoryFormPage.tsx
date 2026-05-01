@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useBlocker } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useForm, useController } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,7 +11,6 @@ import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import Badge from '../../../components/ui/Badge';
 import PageHeader from '../../../components/ui/PageHeader';
-import Modal from '../../../components/ui/Modal';
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -77,8 +76,6 @@ export default function CategoryFormPage() {
   const navigate    = useNavigate();
   const queryClient = useQueryClient();
   const isEdit      = !!id;
-
-  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     document.title = isEdit
@@ -152,15 +149,6 @@ export default function CategoryFormPage() {
     if (t === 'root') parentField.onChange(null);
   };
 
-  // ─── Unsaved changes blocker ──────────────────────────────────────────────
-
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      !submitted &&
-      isDirty &&
-      currentLocation.pathname !== nextLocation.pathname,
-  );
-
   // ─── Mutations ────────────────────────────────────────────────────────────
 
   const createMutation = useMutation({
@@ -172,7 +160,6 @@ export default function CategoryFormPage() {
       }),
     onSuccess: (_, vals) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
-      setSubmitted(true);
       toast.success(
         vals.type === 'subcategory'
           ? 'Subcategory created successfully'
@@ -198,7 +185,6 @@ export default function CategoryFormPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['category', id] });
-      setSubmitted(true);
       toast.success('Category updated successfully');
       navigate('/admin/categories');
     },
@@ -413,34 +399,12 @@ export default function CategoryFormPage() {
               loading={isPending}
               disabled={isPending || (isEdit && !isDirty)}
             >
-              {isEdit ? <Save size={14} /> : <Plus size={14} />}
+              {!isPending && (isEdit ? <Save size={14} /> : <Plus size={14} />)}
               {isEdit ? 'Save Changes' : 'Create Category'}
             </Button>
           </div>
         </form>
       </div>
-
-      {/* Unsaved changes dialog */}
-      <Modal
-        open={blocker.state === 'blocked'}
-        onClose={() => blocker.reset?.()}
-        title="Discard Changes"
-        maxWidth="sm"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => blocker.reset?.()}>
-              Keep Editing
-            </Button>
-            <Button variant="danger" onClick={() => blocker.proceed?.()}>
-              Discard
-            </Button>
-          </>
-        }
-      >
-        <p className="text-sm text-lng-grey">
-          You have unsaved changes. Are you sure you want to leave?
-        </p>
-      </Modal>
     </>
   );
 }

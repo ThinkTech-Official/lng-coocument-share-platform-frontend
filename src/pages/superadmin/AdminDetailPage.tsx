@@ -305,7 +305,8 @@ export default function AdminDetailPage() {
                   loading={updateMutation.isPending}
                   disabled={!isDirty || anyPending}
                 >
-                  <Save size={14} />Save Changes
+                  {!updateMutation.isPending && <Save size={14} />}
+                  Save Changes
                 </Button>
               </div>
             </form>
@@ -331,7 +332,6 @@ export default function AdminDetailPage() {
                 variant={isActive ? 'danger' : 'primary'}
                 className="w-full"
                 disabled={anyPending}
-                loading={statusMutation.isPending}
                 onClick={() => setStatusDialogOpen(true)}
               >
                 {isActive
@@ -352,7 +352,6 @@ export default function AdminDetailPage() {
                 variant="danger"
                 className="w-full"
                 disabled={anyPending}
-                loading={deleteMutation.isPending}
                 onClick={() => setDeleteDialogOpen(true)}
               >
                 <Trash2 size={14} />Delete Admin Account

@@ -39,7 +39,7 @@ export default function Button({
       `}
       {...props}
     >
-      {loading && <Spinner size="sm" />}
+      {loading && <Spinner size="sm" color={variant === 'primary' || variant === 'danger' ? 'white' : 'blue'} />}
       {children}
     </button>
   );

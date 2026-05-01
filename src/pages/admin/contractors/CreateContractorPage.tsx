@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useBlocker, Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -12,7 +12,6 @@ import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import PageHeader from '../../../components/ui/PageHeader';
 import Spinner from '../../../components/ui/Spinner';
-import Modal from '../../../components/ui/Modal';
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -29,7 +28,6 @@ type CreateForm = z.infer<typeof schema>;
 export default function CreateContractorPage() {
   const navigate    = useNavigate();
   const queryClient = useQueryClient();
-  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     document.title = 'Create Contractor — LNG Canada';
@@ -50,7 +48,7 @@ export default function CreateContractorPage() {
     handleSubmit,
     setError,
     control,
-    formState: { errors, isDirty },
+    formState: { errors },
   } = useForm<CreateForm>({
     resolver:      zodResolver(schema),
     defaultValues: { name: '', email: '', department_ids: [] },
@@ -59,12 +57,6 @@ export default function CreateContractorPage() {
 
   const selectedIds = (useWatch({ control, name: 'department_ids' }) as string[]) ?? [];
 
-  // ─── Unsaved changes blocker ────────────────────────────────────────────────
-
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      isDirty && !submitted && currentLocation.pathname !== nextLocation.pathname
-  );
 
   // ─── Mutation ───────────────────────────────────────────────────────────────
 
@@ -74,7 +66,6 @@ export default function CreateContractorPage() {
 
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['contractors'] });
-      setSubmitted(true);
       toast.success(
         `Contractor account created. A temporary password has been sent to ${variables.email}.`
       );
@@ -226,30 +217,13 @@ export default function CreateContractorPage() {
               loading={isPending}
               disabled={isPending}
             >
-              <UserPlus size={14} />
+              {!isPending && <UserPlus size={14} />}
               Create Contractor
             </Button>
           </div>
         </form>
       </div>
 
-      {/* Unsaved changes dialog */}
-      <Modal
-        open={blocker.state === 'blocked'}
-        onClose={() => blocker.reset?.()}
-        title="Discard Changes"
-        maxWidth="sm"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => blocker.reset?.()}>Keep Editing</Button>
-            <Button variant="danger" onClick={() => blocker.proceed?.()}>Discard</Button>
-          </>
-        }
-      >
-        <p className="text-sm text-lng-grey">
-          You have unsaved changes. Are you sure you want to leave?
-        </p>
-      </Modal>
     </>
   );
 }

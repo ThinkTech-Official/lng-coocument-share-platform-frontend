@@ -84,7 +84,7 @@ function DeptCard({ dept, onEdit, onDelete, deleting }: DeptCardProps) {
           <Pencil size={13} />
           Edit
         </Button>
-        <Button variant="danger" size="sm" onClick={onDelete} loading={deleting} disabled={deleting}>
+        <Button variant="danger" size="sm" onClick={onDelete} disabled={deleting}>
           <Trash2 size={13} />
           Delete
         </Button>

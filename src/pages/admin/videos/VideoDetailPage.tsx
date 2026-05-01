@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useBlocker } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -314,13 +314,6 @@ export default function VideoDetailPage() {
 
   const deptsDirty =
     localAccess !== origAccess || !sameSet(selectedDeptIds, origDeptIds);
-
-  // ─── Blocker (unsaved edit form) ───────────────────────────────────────
-
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      isDirty && currentLocation.pathname !== nextLocation.pathname,
-  );
 
   // ─── Department access handlers ────────────────────────────────────────
 
@@ -840,24 +833,6 @@ export default function VideoDetailPage() {
       </div>
 
       {/* ── Dialogs ───────────────────────────────────────────────────────── */}
-
-      {/* Unsaved edit form changes */}
-      <Modal
-        open={blocker.state === 'blocked'}
-        onClose={() => blocker.reset?.()}
-        title="Unsaved Changes"
-        maxWidth="sm"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => blocker.reset?.()}>Keep Editing</Button>
-            <Button variant="danger"  onClick={() => blocker.proceed?.()}>Discard Changes</Button>
-          </>
-        }
-      >
-        <p className="text-sm text-lng-grey">
-          You have unsaved changes in the video details form. Are you sure you want to leave?
-        </p>
-      </Modal>
 
       {/* Take Offline confirm */}
       <ConfirmDialog

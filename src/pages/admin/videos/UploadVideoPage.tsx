@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useBlocker } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useForm, useController, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,8 +17,6 @@ import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import PageHeader from '../../../components/ui/PageHeader';
 import Spinner from '../../../components/ui/Spinner';
-import ConfirmDialog from '../../../components/ui/ConfirmDialog';
-
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const VIDEO_TYPES  = ['video/mp4', 'video/quicktime', 'video/x-msvideo'];
@@ -103,7 +101,6 @@ export default function UploadVideoPage() {
 
   // ─── Upload state ─────────────────────────────────────────────────────
   const [progress,  setProgress]  = useState<number | null>(null);
-  const [submitted, setSubmitted] = useState(false);
 
   // ─── Thumbnail preview via FileReader ─────────────────────────────────
   useEffect(() => {
@@ -141,7 +138,7 @@ export default function UploadVideoPage() {
     register,
     handleSubmit,
     control,
-    formState: { errors, isDirty },
+    formState: { errors },
   } = useForm<FormValues>({
     resolver:      zodResolver(schema),
     defaultValues: {
@@ -188,7 +185,6 @@ export default function UploadVideoPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['videos'] });
-      setSubmitted(true);
       toast.success(
         'Video uploaded successfully. It will be available once processing completes.',
       );
@@ -284,15 +280,6 @@ export default function UploadVideoPage() {
     const f = e.dataTransfer.files[0];
     if (f && !uploading) validateAndSetThumb(f);
   };
-
-  // ─── Blocker ──────────────────────────────────────────────────────────
-
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      !submitted &&
-      (isDirty || !!videoFile || !!thumbFile) &&
-      currentLocation.pathname !== nextLocation.pathname,
-  );
 
   // ─── Submit ───────────────────────────────────────────────────────────
 
@@ -775,15 +762,6 @@ export default function UploadVideoPage() {
         )}
       </form>
 
-      {/* ── Unsaved changes dialog ─────────────────────────────────────── */}
-      <ConfirmDialog
-        open={blocker.state === 'blocked'}
-        onClose={() => blocker.reset?.()}
-        onConfirm={() => blocker.proceed?.()}
-        title="Discard Upload"
-        message="You have unsaved changes. Are you sure you want to leave?"
-        confirmLabel="Discard"
-      />
     </>
   );
 }

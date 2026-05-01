@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, useBlocker } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -384,13 +384,6 @@ export default function DocumentDetailPage() {
   const deptsDirty =
     localAccess !== origAccess || !sameSet(selectedDeptIds, origDeptIds);
 
-  // ─── Blocker (unsaved edit details) ───────────────────────────────────
-
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      isDirty && currentLocation.pathname !== nextLocation.pathname,
-  );
-
   // ─── Reupload handlers ─────────────────────────────────────────────────
 
   const validateAndSetReuploadFile = (f: File) => {
@@ -708,6 +701,7 @@ export default function DocumentDetailPage() {
                 size="sm"
                 onClick={() => window.open(doc.document_url!, '_blank', 'noopener,noreferrer')}
                 disabled={anyPending}
+                className='flex w-fit text-nowrap'
               >
                 <ExternalLink size={13} />
                 Open Current File
@@ -999,24 +993,6 @@ export default function DocumentDetailPage() {
       </div>
 
       {/* ── Dialogs ───────────────────────────────────────────────────────── */}
-
-      {/* Unsaved edit changes */}
-      <Modal
-        open={blocker.state === 'blocked'}
-        onClose={() => blocker.reset?.()}
-        title="Unsaved Changes"
-        maxWidth="sm"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => blocker.reset?.()}>Keep Editing</Button>
-            <Button variant="danger"  onClick={() => blocker.proceed?.()}>Discard Changes</Button>
-          </>
-        }
-      >
-        <p className="text-sm text-lng-grey">
-          You have unsaved changes in the document details form. Are you sure you want to leave?
-        </p>
-      </Modal>
 
       {/* Unpublish confirm */}
       <ConfirmDialog

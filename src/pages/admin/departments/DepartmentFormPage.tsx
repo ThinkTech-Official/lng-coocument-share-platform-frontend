@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useBlocker } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,7 +10,6 @@ import { getDepartment, createDepartment, updateDepartment } from '../../../api/
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import PageHeader from '../../../components/ui/PageHeader';
-import Modal from '../../../components/ui/Modal';
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -54,8 +53,6 @@ export default function DepartmentFormPage() {
   const queryClient = useQueryClient();
   const isEdit      = !!id;
 
-  const [submitted, setSubmitted] = useState(false);
-
   useEffect(() => {
     document.title = isEdit
       ? 'Edit Department — LNG Canada'
@@ -98,13 +95,6 @@ export default function DepartmentFormPage() {
   const charCount  = descValue.length;
   const charWarning = charCount > 450;
 
-  // ─── Unsaved changes blocker ──────────────────────────────────────────────────
-
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      isDirty && !submitted && currentLocation.pathname !== nextLocation.pathname
-  );
-
   // ─── Mutations ────────────────────────────────────────────────────────────────
 
   const createMutation = useMutation({
@@ -112,7 +102,6 @@ export default function DepartmentFormPage() {
       createDepartment({ name: data.name, description: data.description ?? '' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['departments'] });
-      setSubmitted(true);
       toast.success('Department created successfully');
       navigate('/admin/departments');
     },
@@ -132,7 +121,6 @@ export default function DepartmentFormPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['departments'] });
       queryClient.invalidateQueries({ queryKey: ['department', id] });
-      setSubmitted(true);
       toast.success('Department updated successfully');
       navigate('/admin/departments');
     },
@@ -275,30 +263,14 @@ export default function DepartmentFormPage() {
               loading={isPending}
               disabled={isPending || (isEdit && !isDirty)}
             >
-              {isEdit ? <Save size={14} /> : <Plus size={14} />}
-              {isEdit ? 'Save Changes' : 'Create Department'}
+              {!isPending && (isEdit ? <Save size={14} /> : <Plus size={14} />)}
+              {isPending
+                ? (isEdit ? 'Saving...' : 'Creating...')
+                : (isEdit ? 'Save Changes' : 'Create Department')}
             </Button>
           </div>
         </form>
       </div>
-
-      {/* Unsaved changes dialog */}
-      <Modal
-        open={blocker.state === 'blocked'}
-        onClose={() => blocker.reset?.()}
-        title="Discard Changes"
-        maxWidth="sm"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => blocker.reset?.()}>Keep Editing</Button>
-            <Button variant="danger" onClick={() => blocker.proceed?.()}>Discard</Button>
-          </>
-        }
-      >
-        <p className="text-sm text-lng-grey">
-          You have unsaved changes. Are you sure you want to leave?
-        </p>
-      </Modal>
     </>
   );
 }
