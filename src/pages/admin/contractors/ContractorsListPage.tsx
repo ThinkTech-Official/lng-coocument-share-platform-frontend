@@ -5,22 +5,21 @@ import {
   HardHat,
   UserPlus,
   Pencil,
-  ToggleLeft,
-  ToggleRight,
   Trash2,
   Search,
   AlertCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { type Contractor, type Department } from '../../types';
-import { getContractors, updateContractorStatus, deleteContractor } from '../../api/contractors';
-import { getDepartments } from '../../api/departments';
-import PageHeader from '../../components/ui/PageHeader';
-import Badge from '../../components/ui/Badge';
-import Button from '../../components/ui/Button';
-import EmptyState from '../../components/ui/EmptyState';
-import Modal from '../../components/ui/Modal';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { type Contractor, type Department } from '../../../types';
+import { getContractors, updateContractorStatus, deleteContractor } from '../../../api/contractors';
+import { getDepartments } from '../../../api/departments';
+import PageHeader from '../../../components/ui/PageHeader';
+import Badge from '../../../components/ui/Badge';
+import Button from '../../../components/ui/Button';
+import EmptyState from '../../../components/ui/EmptyState';
+import Modal from '../../../components/ui/Modal';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import Toggle from '../../../components/ui/Toggle';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -384,17 +383,14 @@ export default function ContractorsListPage() {
                       </button>
 
                       {/* Toggle status */}
-                      <button
-                        title={contractor.is_active ? 'Deactivate' : 'Activate'}
-                        onClick={() => openStatusDialog(contractor)}
-                        className="rounded p-1.5 transition-colors hover:bg-gray-100"
-                      >
-                        {contractor.is_active ? (
-                          <ToggleRight size={18} className="text-green-600" />
-                        ) : (
-                          <ToggleLeft size={18} className="text-lng-grey" />
-                        )}
-                      </button>
+                      <div className="flex items-center px-1.5">
+                        <Toggle
+                          size="sm"
+                          checked={contractor.is_active}
+                          onChange={() => openStatusDialog(contractor)}
+                          disabled={statusMutation.isPending && statusDialog.contractor?.id === contractor.id}
+                        />
+                      </div>
 
                       {/* Delete */}
                       <button

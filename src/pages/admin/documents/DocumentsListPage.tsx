@@ -8,16 +8,16 @@ import {
   AlertCircle, FileText, X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { type Document, type Category, type DocumentState } from '../../types';
+import { type Document, type Category, type DocumentState } from '../../../types';
 import {
   getDocuments, updateDocumentStatus, deleteDocument,
-} from '../../api/documents';
-import { getCategories } from '../../api/categories';
-import PageHeader from '../../components/ui/PageHeader';
-import Button from '../../components/ui/Button';
-import Badge from '../../components/ui/Badge';
-import EmptyState from '../../components/ui/EmptyState';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
+} from '../../../api/documents';
+import { getCategories } from '../../../api/categories';
+import PageHeader from '../../../components/ui/PageHeader';
+import Button from '../../../components/ui/Button';
+import Badge from '../../../components/ui/Badge';
+import EmptyState from '../../../components/ui/EmptyState';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

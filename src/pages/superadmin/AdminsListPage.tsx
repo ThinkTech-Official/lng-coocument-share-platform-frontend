@@ -5,8 +5,6 @@ import {
   Users,
   UserPlus,
   Pencil,
-  ToggleLeft,
-  ToggleRight,
   Trash2,
   Search,
   AlertCircle,
@@ -19,6 +17,7 @@ import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
+import Toggle from '../../components/ui/Toggle';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -360,17 +359,13 @@ export default function AdminsListPage() {
                       </button>
 
                       {/* Toggle status */}
-                      <button
-                        title={admin.is_active ? 'Deactivate' : 'Activate'}
-                        onClick={() => openStatusDialog(admin)}
-                        className="rounded p-1.5 transition-colors hover:bg-gray-100"
-                      >
-                        {admin.is_active ? (
-                          <ToggleRight size={18} className="text-green-600" />
-                        ) : (
-                          <ToggleLeft size={18} className="text-lng-grey" />
-                        )}
-                      </button>
+                      <div title={admin.is_active ? 'Deactivate' : 'Activate'} className="flex items-center px-1.5">
+                        <Toggle
+                          size="sm"
+                          checked={admin.is_active}
+                          onChange={() => openStatusDialog(admin)}
+                        />
+                      </div>
 
                       {/* Delete */}
                       <button

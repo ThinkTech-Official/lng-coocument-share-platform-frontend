@@ -5,13 +5,13 @@ import {
   Plus, Search, Pencil, Trash2, Building2, AlertCircle, AlertTriangle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { type Department } from '../../types';
-import { getDepartments, deleteDepartment } from '../../api/departments';
-import PageHeader from '../../components/ui/PageHeader';
-import Button from '../../components/ui/Button';
-import EmptyState from '../../components/ui/EmptyState';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
-import Modal from '../../components/ui/Modal';
+import { type Department } from '../../../types';
+import { getDepartments, deleteDepartment } from '../../../api/departments';
+import PageHeader from '../../../components/ui/PageHeader';
+import Button from '../../../components/ui/Button';
+import EmptyState from '../../../components/ui/EmptyState';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import Modal from '../../../components/ui/Modal';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -64,7 +64,7 @@ function DeptCard({ dept, onEdit, onDelete, deleting }: DeptCardProps) {
   return (
     <div className="flex flex-col rounded-lg border-l-4 border-lng-blue bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
       {/* Name */}
-      <h3 className="mb-1 line-clamp-2 text-base font-bold text-lng-grey break-words">
+      <h3 className="mb-1 line-clamp-2 text-base font-bold text-lng-grey break-word">
         {dept.name}
       </h3>
 
@@ -84,7 +84,7 @@ function DeptCard({ dept, onEdit, onDelete, deleting }: DeptCardProps) {
           <Pencil size={13} />
           Edit
         </Button>
-        <Button variant="danger" size="sm" onClick={onDelete} loading={deleting} disabled={deleting}>
+        <Button variant="danger" size="sm" onClick={onDelete} disabled={deleting}>
           <Trash2 size={13} />
           Delete
         </Button>

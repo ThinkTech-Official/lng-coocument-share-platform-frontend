@@ -10,6 +10,7 @@ import {
 import { useAuthStore } from './store/authStore';
 import { Role } from './types';
 import Spinner from './components/ui/Spinner';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 import RoleRoute from './components/guards/RoleRoute';
 import ForceResetRoute from './components/guards/ForceResetRoute';
@@ -33,19 +34,19 @@ const AdminDetailPage         = lazy(() => import('./pages/superadmin/AdminDetai
 const AuditLogsPage           = lazy(() => import('./pages/superadmin/AuditLogsPage'));
 
 const AdminDashboardPage    = lazy(() => import('./pages/admin/AdminDashboardPage'));
-const ContractorsListPage   = lazy(() => import('./pages/admin/ContractorsListPage'));
-const CreateContractorPage  = lazy(() => import('./pages/admin/CreateContractorPage'));
-const ContractorDetailPage  = lazy(() => import('./pages/admin/ContractorDetailPage'));
-const DepartmentsListPage   = lazy(() => import('./pages/admin/DepartmentsListPage'));
-const DepartmentFormPage    = lazy(() => import('./pages/admin/DepartmentFormPage'));
-const CategoriesListPage    = lazy(() => import('./pages/admin/CategoriesListPage'));
-const CategoryFormPage      = lazy(() => import('./pages/admin/CategoryFormPage'));
-const DocumentsListPage     = lazy(() => import('./pages/admin/DocumentsListPage'));
-const UploadDocumentPage    = lazy(() => import('./pages/admin/UploadDocumentPage'));
-const DocumentDetailPage    = lazy(() => import('./pages/admin/DocumentDetailPage'));
-const VideosListPage        = lazy(() => import('./pages/admin/VideosListPage'));
-const UploadVideoPage       = lazy(() => import('./pages/admin/UploadVideoPage'));
-const VideoDetailPage       = lazy(() => import('./pages/admin/VideoDetailPage'));
+const ContractorsListPage   = lazy(() => import('./pages/admin/contractors/ContractorsListPage'));
+const CreateContractorPage  = lazy(() => import('./pages/admin/contractors/CreateContractorPage'));
+const ContractorDetailPage  = lazy(() => import('./pages/admin/contractors/ContractorDetailPage'));
+const DepartmentsListPage   = lazy(() => import('./pages/admin/departments/DepartmentsListPage'));
+const DepartmentFormPage    = lazy(() => import('./pages/admin/departments/DepartmentFormPage'));
+const CategoriesListPage    = lazy(() => import('./pages/admin/categories/CategoriesListPage'));
+const CategoryFormPage      = lazy(() => import('./pages/admin/categories/CategoryDetailsPage'));
+const DocumentsListPage     = lazy(() => import('./pages/admin/documents/DocumentsListPage'));
+const UploadDocumentPage    = lazy(() => import('./pages/admin/documents/UploadDocumentPage'));
+const DocumentDetailPage    = lazy(() => import('./pages/admin/documents/DocumentDetailPage'));
+const VideosListPage        = lazy(() => import('./pages/admin/videos/VideosListPage'));
+const UploadVideoPage       = lazy(() => import('./pages/admin/videos/UploadVideoPage'));
+const VideoDetailPage       = lazy(() => import('./pages/admin/videos/VideoDetailPage'));
 
 const HomePage             = lazy(() => import('./pages/contractor/HomepagePage'));
 const DocumentViewerPage   = lazy(() => import('./pages/contractor/DocumentViewerPage'));
@@ -150,5 +151,9 @@ const router = createBrowserRouter(
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <ErrorBoundary>
+      <RouterProvider router={router} />
+    </ErrorBoundary>
+  );
 }

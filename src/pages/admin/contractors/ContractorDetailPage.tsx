@@ -1,38 +1,18 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useBlocker, Link } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import {
-  ArrowLeft, ArrowRight, Save, AlertCircle, AlertTriangle,
-  UserX, UserCheck, Trash2, Info,
+  ArrowLeft, ArrowRight, Save, AlertCircle, AlertTriangle, Trash2, Info,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
-import {
-  getContractor,
-  updateContractor,
-  updateContractorStatus,
-  updateContractorDepartments,
-  deleteContractor,
-} from '../../api/contractors';
-import { getDepartments } from '../../api/departments';
-import Input from '../../components/ui/Input';
-import Button from '../../components/ui/Button';
-import PageHeader from '../../components/ui/PageHeader';
-import Badge from '../../components/ui/Badge';
-import Spinner from '../../components/ui/Spinner';
-import Modal from '../../components/ui/Modal';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
-
-// ─── Schema ───────────────────────────────────────────────────────────────────
-
-const editSchema = z.object({
-  name:  z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name is too long'),
-  email: z.string().min(1, 'Email is required').email('Enter a valid email address'),
-});
-
-type EditForm = z.infer<typeof editSchema>;
+import Input from '../../../components/ui/Input';
+import Button from '../../../components/ui/Button';
+import PageHeader from '../../../components/ui/PageHeader';
+import Badge from '../../../components/ui/Badge';
+import Spinner from '../../../components/ui/Spinner';
+import Modal from '../../../components/ui/Modal';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import Toggle from '../../../components/ui/Toggle';
+import { ContractorFormSkeleton } from '../../../components/admin/contractors/ContractorFormSkeleton';
+import { useContractorForm } from '../../../hooks/admin/useContractorForm';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -42,211 +22,43 @@ function formatDate(iso: string) {
   });
 }
 
-function sameSet(a: string[], b: string[]) {
-  return JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
-}
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
-function PageSkeleton() {
-  const bar = (cls: string) => (
-    <div className={`animate-pulse rounded bg-lng-blue-20 ${cls}`} />
-  );
-  return (
-    <div>
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div className="space-y-2">{bar('h-6 w-48')}{bar('h-4 w-36')}</div>
-        {bar('h-9 w-44 rounded')}
-      </div>
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <div className="rounded-lg bg-white p-6 shadow-sm space-y-4">
-            {bar('h-4 w-36 mb-2')}<div className="border-b border-gray-200 pb-4" />
-            {bar('h-10 w-full')}{bar('h-10 w-full')}
-          </div>
-          <div className="rounded-lg bg-white p-6 shadow-sm space-y-3">
-            {bar('h-4 w-40 mb-2')}<div className="border-b border-gray-200 pb-4" />
-            {bar('h-10 w-full')}{bar('h-10 w-full')}{bar('h-10 w-full')}
-          </div>
-        </div>
-        <div className="space-y-6">
-          <div className="rounded-lg bg-white p-6 shadow-sm space-y-4">
-            {bar('h-4 w-32 mb-2')}<div className="border-b border-gray-200 pb-4" />
-            {bar('h-5 w-16 rounded-full')}{bar('h-4 w-52')}{bar('h-9 w-full rounded')}
-          </div>
-          <div className="rounded-lg bg-white p-6 shadow-sm space-y-4">
-            {bar('h-4 w-24 mb-2')}<div className="border-b border-gray-200 pb-4" />
-            {bar('h-4 w-64')}{bar('h-9 w-full rounded')}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ContractorDetailPage() {
-  const { id }      = useParams<{ id: string }>();
-  const navigate    = useNavigate();
-  const queryClient = useQueryClient();
-
-  // ─── Contractor query ────────────────────────────────────────────────────────
-
+  const { id } = useParams<{ id: string }>();
   const {
-    data: contractor,
-    isLoading,
-    isError,
-  } = useQuery({
-    queryKey: ['contractor', id],
-    queryFn:  () => getContractor(id!),
-    enabled:  !!id,
-  });
+    contractor,
+    contractorLoading,
+    contractorError,
+    departments,
+    deptsLoading,
+    form,
+    selectedDeptIds,
+    deptError,
+    toggleDept,
+    deptsChanged,
+    isPending,
+    onSubmit,
+    handleSaveDepts,
+    statusMutation,
+    deleteMutation,
+    navigate,
+  } = useContractorForm(id);
 
-  // ─── Departments query ────────────────────────────────────────────────────────
-
-  const { data: departments, isLoading: deptsLoading } = useQuery({
-    queryKey: ['departments'],
-    queryFn:  getDepartments,
-  });
-
-  // ─── Page title ───────────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    document.title = contractor
-      ? `${contractor.name} — LNG Canada`
-      : 'Contractor Details — LNG Canada';
-    return () => { document.title = 'LNG Canada'; };
-  }, [contractor]);
-
-  // ─── Edit details form ────────────────────────────────────────────────────────
-
-  const [submitted, setSubmitted] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    setError,
-    reset,
-    formState: { errors, isDirty },
-  } = useForm<EditForm>({
-    resolver:      zodResolver(editSchema),
-    defaultValues: { name: '', email: '' },
-    mode:          'onSubmit',
-  });
-
-  useEffect(() => {
-    if (contractor) {
-      reset({ name: contractor.name, email: contractor.email });
-    }
-  }, [contractor, reset]);
-
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      isDirty && !submitted && currentLocation.pathname !== nextLocation.pathname
-  );
-
-  // ─── Department selection state ────────────────────────────────────────────────
-
-  const [selectedDeptIds, setSelectedDeptIds] = useState<string[]>([]);
-  const [deptError, setDeptError]             = useState<string | null>(null);
-
-  useEffect(() => {
-    if (contractor) {
-      setSelectedDeptIds(contractor.departments.map((d) => d.id));
-    }
-  }, [contractor]);
-
-  const deptsChanged = contractor
-    ? !sameSet(selectedDeptIds, contractor.departments.map((d) => d.id))
-    : false;
-
-  function toggleDept(deptId: string) {
-    setDeptError(null);
-    setSelectedDeptIds((prev) =>
-      prev.includes(deptId) ? prev.filter((x) => x !== deptId) : [...prev, deptId]
-    );
-  }
+  const { register, reset, formState: { errors, isDirty } } = form;
 
   // ─── Dialog state ─────────────────────────────────────────────────────────────
 
   const [statusDialog, setStatusDialog] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(false);
 
-  // ─── Mutations ────────────────────────────────────────────────────────────────
-
-  const updateMutation = useMutation({
-    mutationFn: (data: EditForm) => updateContractor(id!, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contractor', id] });
-      queryClient.invalidateQueries({ queryKey: ['contractors'] });
-      setSubmitted(false);
-      toast.success('Contractor details updated');
-    },
-    onError: (error: unknown) => {
-      const status = (error as { response?: { status?: number } })?.response?.status;
-      if (status === 409) {
-        setError('email', { message: 'An account with this email already exists.' });
-      } else {
-        toast.error('Failed to update. Please try again.');
-      }
-    },
-  });
-
-  const deptMutation = useMutation({
-    mutationFn: (ids: string[]) => updateContractorDepartments(id!, ids),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contractor', id] });
-      queryClient.invalidateQueries({ queryKey: ['contractors'] });
-      toast.success('Department access updated');
-    },
-    onError: () => toast.error('Failed to update departments. Please try again.'),
-  });
-
-  const statusMutation = useMutation({
-    mutationFn: (is_active: boolean) => updateContractorStatus(id!, is_active),
-    onSuccess: (_data, is_active) => {
-      queryClient.invalidateQueries({ queryKey: ['contractor', id] });
-      queryClient.invalidateQueries({ queryKey: ['contractors'] });
-      setStatusDialog(false);
-      toast.success(`Contractor ${is_active ? 'activated' : 'deactivated'} successfully`);
-    },
-    onError: () => toast.error('Something went wrong. Please try again.'),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: () => deleteContractor(id!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contractors'] });
-      toast.success('Contractor account deleted');
-      navigate('/admin/contractors');
-    },
-    onError: () => toast.error('Failed to delete. Please try again.'),
-  });
-
-  const anyPending =
-    updateMutation.isPending ||
-    deptMutation.isPending   ||
-    statusMutation.isPending ||
-    deleteMutation.isPending;
-
-  // ─── Department save handler ───────────────────────────────────────────────────
-
-  function handleSaveDepts() {
-    if (selectedDeptIds.length === 0) {
-      setDeptError('At least one department is required');
-      return;
-    }
-    deptMutation.mutate(selectedDeptIds);
-  }
-
   // ─── Loading state ────────────────────────────────────────────────────────────
 
-  if (isLoading) return <PageSkeleton />;
+  if (contractorLoading) return <ContractorFormSkeleton />;
 
   // ─── Error / not found ────────────────────────────────────────────────────────
 
-  if (isError || !contractor) {
+  if (contractorError || !contractor) {
     return (
       <>
         <PageHeader
@@ -282,7 +94,7 @@ export default function ContractorDetailPage() {
           <Button
             variant="outline"
             onClick={() => navigate('/admin/contractors')}
-            disabled={anyPending}
+            disabled={isPending}
           >
             <ArrowLeft size={14} />
             Back to Contractors
@@ -312,21 +124,12 @@ export default function ContractorDetailPage() {
               <h2 className="text-sm font-bold text-lng-grey">Account Details</h2>
             </div>
 
-            <form
-              onSubmit={handleSubmit((data) => {
-                setSubmitted(true);
-                updateMutation.mutate(data, {
-                  onError: () => setSubmitted(false),
-                });
-              })}
-              noValidate
-              className="space-y-5"
-            >
+            <form onSubmit={onSubmit} noValidate className="space-y-5">
               <Input
                 label="Full Name"
                 type="text"
                 placeholder="Enter full name"
-                disabled={anyPending}
+                disabled={isPending}
                 error={errors.name?.message}
                 {...register('name')}
               />
@@ -336,7 +139,7 @@ export default function ContractorDetailPage() {
                   label="Email Address"
                   type="email"
                   placeholder="Enter email address"
-                  disabled={anyPending}
+                  disabled={isPending}
                   error={errors.email?.message}
                   {...register('email')}
                 />
@@ -355,7 +158,7 @@ export default function ContractorDetailPage() {
                   <Button
                     type="button"
                     variant="ghost"
-                    disabled={anyPending}
+                    disabled={isPending}
                     onClick={() => reset({ name: contractor.name, email: contractor.email })}
                   >
                     Reset Changes
@@ -364,8 +167,8 @@ export default function ContractorDetailPage() {
                 <Button
                   type="submit"
                   variant="primary"
-                  loading={updateMutation.isPending}
-                  disabled={!isDirty || anyPending}
+                  loading={isPending}
+                  disabled={!isDirty || isPending}
                 >
                   <Save size={14} />
                   Save Changes
@@ -408,12 +211,12 @@ export default function ContractorDetailPage() {
                         key={dept.id}
                         className={`flex cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors ${
                           checked ? 'bg-lng-blue-20' : 'hover:bg-gray-50'
-                        } ${anyPending ? 'cursor-not-allowed opacity-60' : ''}`}
+                        } ${isPending ? 'cursor-not-allowed opacity-60' : ''}`}
                       >
                         <input
                           type="checkbox"
                           checked={checked}
-                          disabled={anyPending}
+                          disabled={isPending}
                           onChange={() => toggleDept(dept.id)}
                           className="h-4 w-4 rounded border-gray-300 accent-lng-blue"
                         />
@@ -431,8 +234,8 @@ export default function ContractorDetailPage() {
                   type="button"
                   variant="primary"
                   className="w-full justify-center"
-                  loading={deptMutation.isPending}
-                  disabled={!deptsChanged || anyPending}
+                  loading={isPending}
+                  disabled={!deptsChanged || isPending}
                   onClick={handleSaveDepts}
                 >
                   <Save size={14} />
@@ -457,25 +260,14 @@ export default function ContractorDetailPage() {
                 {contractor.is_active ? 'Active' : 'Inactive'}
               </Badge>
 
-              <p className="text-sm text-lng-grey">
-                {contractor.is_active
-                  ? 'This contractor can log in and view documents and videos.'
-                  : 'This contractor cannot log in.'}
-              </p>
-
-              <Button
-                type="button"
-                variant={contractor.is_active ? 'danger' : 'primary'}
-                className="w-full justify-center"
-                disabled={anyPending}
-                onClick={() => setStatusDialog(true)}
-              >
-                {contractor.is_active ? (
-                  <><UserX size={14} /> Deactivate Contractor</>
-                ) : (
-                  <><UserCheck size={14} /> Activate Contractor</>
-                )}
-              </Button>
+              {/* Active Status Toggle */}
+              <Toggle
+                label={contractor.is_active ? "Account Active" : "Account Inactive"}
+                description={contractor.is_active ? "Contractor can log in and view content." : "Contractor cannot log in."}
+                checked={contractor.is_active}
+                onChange={() => setStatusDialog(true)}
+                disabled={isPending}
+              />
             </div>
           </div>
 
@@ -493,7 +285,7 @@ export default function ContractorDetailPage() {
                 type="button"
                 variant="danger"
                 className="w-full justify-center"
-                disabled={anyPending}
+                disabled={isPending}
                 onClick={() => setDeleteDialog(true)}
               >
                 <Trash2 size={14} />
@@ -537,7 +329,7 @@ export default function ContractorDetailPage() {
             <Button
               variant={contractor.is_active ? 'danger' : 'primary'}
               loading={statusMutation.isPending}
-              onClick={() => statusMutation.mutate(!contractor.is_active)}
+              onClick={() => statusMutation.mutate(!contractor.is_active, { onSuccess: () => setStatusDialog(false) })}
             >
               {contractor.is_active ? 'Deactivate' : 'Activate'}
             </Button>
@@ -562,23 +354,6 @@ export default function ContractorDetailPage() {
         message={`Are you sure you want to delete ${contractor.name}? This action cannot be undone. The contractor will lose all access immediately.`}
       />
 
-      {/* ── Unsaved changes dialog ── */}
-      <Modal
-        open={blocker.state === 'blocked'}
-        onClose={() => blocker.reset?.()}
-        title="Discard Changes"
-        maxWidth="sm"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => blocker.reset?.()}>Keep Editing</Button>
-            <Button variant="danger" onClick={() => blocker.proceed?.()}>Discard</Button>
-          </>
-        }
-      >
-        <p className="text-sm text-lng-grey">
-          You have unsaved changes. Are you sure you want to leave?
-        </p>
-      </Modal>
     </>
   );
 }

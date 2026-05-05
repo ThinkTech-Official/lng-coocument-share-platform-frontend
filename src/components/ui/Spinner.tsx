@@ -1,5 +1,6 @@
 interface SpinnerProps {
   size?: 'sm' | 'md' | 'lg';
+  color?: 'blue' | 'white' | 'current';
   className?: string;
 }
 
@@ -9,10 +10,16 @@ const sizeMap = {
   lg: 'w-8 h-8 border-[3px]',
 };
 
-export default function Spinner({ size = 'md', className = '' }: SpinnerProps) {
+const colorMap = {
+  blue: 'border-lng-blue',
+  white: 'border-white',
+  current: 'border-current',
+};
+
+export default function Spinner({ size = 'md', color = 'blue', className = '' }: SpinnerProps) {
   return (
     <div
-      className={`animate-spin rounded-full border-lng-blue border-t-transparent ${sizeMap[size]} ${className}`}
+      className={`animate-spin rounded-full ${colorMap[color]} border-t-transparent ${sizeMap[size]} ${className}`}
       role="status"
       aria-label="Loading"
     />

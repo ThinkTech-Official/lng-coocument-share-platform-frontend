@@ -14,7 +14,7 @@ export default function ContractorLayout() {
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: 'Arial, sans-serif' }}>
       {/* Top nav bar */}
-      <header className="flex h-16 items-center gap-4 bg-lng-blue px-6">
+      <header className="flex h-16 items-center justify-between gap-4 bg-lng-blue px-6">
         {/* Logo */}
         <div className="flex shrink-0 items-center gap-2">
           <span className="text-sm font-bold text-white tracking-wide">
@@ -23,7 +23,7 @@ export default function ContractorLayout() {
         </div>
 
         {/* Search — center */}
-        <div className="flex flex-1 justify-center px-4">
+        {/* <div className="flex flex-1 justify-center px-4">
           <div className="relative w-full max-w-md">
             <Search
               size={15}
@@ -39,7 +39,7 @@ export default function ContractorLayout() {
               "
             />
           </div>
-        </div>
+        </div> */}
 
         {/* User + logout — right */}
         <div className="flex shrink-0 items-center gap-4">
