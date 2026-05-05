@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -66,7 +66,7 @@ export function useContractorForm(id?: string) {
   });
 
   const form = (isEdit ? editForm : createForm) as any;
-  const { reset, control, setError } = form;
+  const { setError } = form;
 
   useEffect(() => {
     if (isEdit && contractor) {

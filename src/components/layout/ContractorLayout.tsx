@@ -1,5 +1,5 @@
 import { Outlet, useNavigate } from 'react-router-dom';
-import { LogOut, Search } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 
 export default function ContractorLayout() {

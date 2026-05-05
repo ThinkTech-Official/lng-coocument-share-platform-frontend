@@ -4,7 +4,7 @@ import {
   useQuery, useMutation, useQueryClient, keepPreviousData,
 } from '@tanstack/react-query';
 import {
-  Upload, Search, Pencil, EyeOff, Trash2,
+  Upload, Search, Pencil, Trash2,
   AlertCircle, Video as VideoIcon, X, Radio, Loader2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';

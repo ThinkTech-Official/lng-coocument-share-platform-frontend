@@ -42,7 +42,7 @@ export function useDepartmentForm(id?: string) {
     mode: 'onSubmit',
   });
 
-  const { reset, control, setError, handleSubmit, formState: { errors, isDirty } } = form;
+  const { reset, control, setError, handleSubmit } = form;
 
   // Pre-fill form when edit data arrives
   useEffect(() => {

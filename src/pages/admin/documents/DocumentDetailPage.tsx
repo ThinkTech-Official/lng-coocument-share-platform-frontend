@@ -107,7 +107,7 @@ export default function DocumentDetailPage() {
     navigate,
   } = useDocumentForm(id);
 
-  const { register, control, reset, formState: { errors, isDirty } } = form;
+  const { register, reset, formState: { errors, isDirty } } = form;
 
   // ─── Reupload UI state ─────────────────────────────────────────────────
   const [reuploadDragOver, setReuploadDragOver] = useState(false);

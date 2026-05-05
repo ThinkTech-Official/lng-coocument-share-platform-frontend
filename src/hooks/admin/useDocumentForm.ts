@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useForm, useController } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -33,7 +33,7 @@ export function useDocumentForm(id?: string) {
   // ─── Queries ──────────────────────────────────────────────────────────────
 
   const {
-    data: document,
+    data: docData,
     isLoading: docLoading,
     isError: docError,
   } = useQuery({
@@ -77,23 +77,23 @@ export function useDocumentForm(id?: string) {
   });
 
   const form = (isEdit ? editForm : uploadForm) as any;
-  const { reset, control } = form;
+  const { reset } = form;
 
   useEffect(() => {
-    if (isEdit && document) {
+    if (isEdit && docData) {
       editForm.reset({
-        title: document.title,
-        description: document.description ?? '',
-        category_id: document.category_id ?? document.category?.id ?? '',
+        title: docData.title,
+        description: docData.description ?? '',
+        category_id: docData.category_id ?? docData.category?.id ?? '',
       });
-      const access = (document.access_type ?? DepartmentAccess.ALL) as DepartmentAccess;
-      const ids = (document.document_departments ?? []).map((dd: any) => dd.department_id);
+      const access = (docData.access_type ?? DepartmentAccess.ALL) as DepartmentAccess;
+      const ids = (docData.document_departments ?? []).map((dd: any) => dd.department_id);
       setLocalAccess(access);
       setOrigAccess(access);
       setSelectedDeptIds(ids);
       setOrigDeptIds(ids);
     }
-  }, [isEdit, document, editForm]);
+  }, [isEdit, docData, editForm]);
 
   // ─── File handling ────────────────────────────────────────────────────────
 
@@ -257,7 +257,7 @@ export function useDocumentForm(id?: string) {
 
   return {
     isEdit,
-    document,
+    document: docData,
     docLoading,
     docError,
     rootCategories,

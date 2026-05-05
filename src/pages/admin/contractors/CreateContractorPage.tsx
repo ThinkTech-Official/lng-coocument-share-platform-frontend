@@ -1,4 +1,4 @@
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useWatch } from 'react-hook-form';
 import { ArrowLeft, ArrowRight, UserPlus, Info } from 'lucide-react';
 import Input from '../../../components/ui/Input';
