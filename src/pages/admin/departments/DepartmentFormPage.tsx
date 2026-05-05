@@ -1,149 +1,33 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useForm, useWatch } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useParams } from 'react-router-dom';
 import { ArrowLeft, Plus, Save, AlertCircle } from 'lucide-react';
-import toast from 'react-hot-toast';
-import { getDepartment, createDepartment, updateDepartment } from '../../../api/departments';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import PageHeader from '../../../components/ui/PageHeader';
-
-// ─── Schema ───────────────────────────────────────────────────────────────────
-
-const schema = z.object({
-  name:        z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name is too long'),
-  description: z.string().max(500, 'Description cannot exceed 500 characters'),
-});
-
-type FormValues = z.infer<typeof schema>;
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
-function FormSkeleton() {
-  const bar = (cls: string) => (
-    <div className={`animate-pulse rounded bg-lng-blue-20 ${cls}`} />
-  );
-  return (
-    <div>
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div className="space-y-2">{bar('h-6 w-48')}{bar('h-4 w-36')}</div>
-        {bar('h-9 w-44 rounded')}
-      </div>
-      <div className="max-w-2xl rounded-lg bg-white p-8 shadow-sm space-y-5">
-        {bar('h-4 w-32 mb-2')}
-        <div className="border-b border-gray-200 pb-1" />
-        {bar('h-10 w-full')}
-        {bar('h-28 w-full')}
-        <div className="flex justify-end gap-3 border-t border-gray-200 pt-5">
-          {bar('h-9 w-20 rounded')}{bar('h-9 w-36 rounded')}
-        </div>
-      </div>
-    </div>
-  );
-}
+import { DepartmentFormSkeleton } from '../../../components/admin/departments/DepartmentFormSkeleton';
+import { useDepartmentForm } from '../../../hooks/admin/useDepartmentForm';
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DepartmentFormPage() {
-  const { id }      = useParams<{ id: string }>();
-  const navigate    = useNavigate();
-  const queryClient = useQueryClient();
-  const isEdit      = !!id;
-
-  useEffect(() => {
-    document.title = isEdit
-      ? 'Edit Department — LNG Canada'
-      : 'Create Department — LNG Canada';
-    return () => { document.title = 'LNG Canada'; };
-  }, [isEdit]);
-
-  // ─── Edit: fetch existing department ──────────────────────────────────────────
-
-  const { data: department, isLoading, isError } = useQuery({
-    queryKey: ['department', id],
-    queryFn:  () => getDepartment(id!),
-    enabled:  isEdit,
-  });
-
-  // ─── Form ─────────────────────────────────────────────────────────────────────
-
+  const { id } = useParams<{ id: string }>();
   const {
-    register,
-    handleSubmit,
-    setError,
-    reset,
-    control,
-    formState: { errors, isDirty },
-  } = useForm<FormValues>({
-    resolver:      zodResolver(schema),
-    defaultValues: { name: '', description: '' },
-    mode:          'onSubmit',
-  });
+    isEdit,
+    department,
+    isLoading,
+    isError,
+    form,
+    charCount,
+    charWarning,
+    isPending,
+    onSubmit,
+    navigate,
+  } = useDepartmentForm(id);
 
-  // Pre-fill form when edit data arrives
-  useEffect(() => {
-    if (department) {
-      reset({ name: department.name, description: department.description ?? '' });
-    }
-  }, [department, reset]);
-
-  // Character count for description
-  const descValue = useWatch({ control, name: 'description' }) ?? '';
-  const charCount  = descValue.length;
-  const charWarning = charCount > 450;
-
-  // ─── Mutations ────────────────────────────────────────────────────────────────
-
-  const createMutation = useMutation({
-    mutationFn: (data: FormValues) =>
-      createDepartment({ name: data.name, description: data.description ?? '' }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['departments'] });
-      toast.success('Department created successfully');
-      navigate('/admin/departments');
-    },
-    onError: (error: unknown) => {
-      const status = (error as { response?: { status?: number } })?.response?.status;
-      if (status === 409) {
-        setError('name', { message: 'A department with this name already exists.' });
-      } else {
-        toast.error('Failed to create department. Please try again.');
-      }
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: (data: FormValues) =>
-      updateDepartment(id!, { name: data.name, description: data.description ?? '' }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['departments'] });
-      queryClient.invalidateQueries({ queryKey: ['department', id] });
-      toast.success('Department updated successfully');
-      navigate('/admin/departments');
-    },
-    onError: (error: unknown) => {
-      const status = (error as { response?: { status?: number } })?.response?.status;
-      if (status === 409) {
-        setError('name', { message: 'A department with this name already exists.' });
-      } else {
-        toast.error('Failed to update department. Please try again.');
-      }
-    },
-  });
-
-  const mutation   = isEdit ? updateMutation : createMutation;
-  const isPending  = mutation.isPending;
-
-  function onSubmit(data: FormValues) {
-    mutation.mutate(data);
-  }
+  const { register, formState: { errors, isDirty } } = form;
 
   // ─── Loading skeleton (edit mode) ────────────────────────────────────────────
 
-  if (isEdit && isLoading) return <FormSkeleton />;
+  if (isEdit && isLoading) return <DepartmentFormSkeleton />;
 
   // ─── Error state (edit mode) ──────────────────────────────────────────────────
 
@@ -203,7 +87,7 @@ export default function DepartmentFormPage() {
           </h2>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
+        <form onSubmit={onSubmit} noValidate className="space-y-5">
 
           {/* Department Name */}
           <Input

@@ -1,0 +1,156 @@
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useForm, useController } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { getCategory, getCategories, createCategory, updateCategory } from '../../api/categories';
+import { categorySchema } from '../../constants/schemas';
+import { type CategoryFormValues } from '../../constants/types';
+
+export function useCategoryForm(id?: string) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const isEdit = !!id;
+
+  useEffect(() => {
+    document.title = isEdit
+      ? 'Edit Category — LNG Canada'
+      : 'Create Category — LNG Canada';
+    return () => {
+      document.title = 'LNG Canada';
+    };
+  }, [isEdit]);
+
+  // ─── Queries ──────────────────────────────────────────────────────────────
+
+  const {
+    data: category,
+    isLoading: categoryLoading,
+    isError: categoryError,
+  } = useQuery({
+    queryKey: ['category', id],
+    queryFn: () => getCategory(id!),
+    enabled: isEdit,
+  });
+
+  const { data: allCategories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: getCategories,
+  });
+
+  // Root categories only for parent dropdown; exclude self in edit mode
+  const rootCategories = allCategories.filter(
+    (c) => c.parent_category_id === null && c.id !== id
+  );
+
+  // ─── Form ─────────────────────────────────────────────────────────────────
+
+  const form = useForm<CategoryFormValues>({
+    resolver: zodResolver(categorySchema),
+    defaultValues: { type: 'root', parent_category_id: null, name: '', sort_order: 1 },
+    mode: 'onSubmit',
+  });
+
+  const { reset, control, setError, handleSubmit } = form;
+
+  // Pre-fill form when edit data arrives
+  useEffect(() => {
+    if (category) {
+      reset({
+        type: category.parent_category_id ? 'subcategory' : 'root',
+        parent_category_id: category.parent_category_id,
+        name: category.name,
+        sort_order: category.sort_order,
+      });
+    }
+  }, [category, reset]);
+
+  // ─── Controlled fields ────────────────────────────────────────────────────
+
+  const { field: typeField } = useController({ name: 'type', control });
+
+  const {
+    field: parentField,
+    fieldState: { error: parentError },
+  } = useController({ name: 'parent_category_id', control, defaultValue: null });
+
+  const watchType = typeField.value;
+
+  const handleTypeChange = (t: 'root' | 'subcategory') => {
+    typeField.onChange(t);
+    if (t === 'root') parentField.onChange(null);
+  };
+
+  // ─── Mutations ────────────────────────────────────────────────────────────
+
+  const createMutation = useMutation({
+    mutationFn: (vals: CategoryFormValues) =>
+      createCategory({
+        name: vals.name,
+        sort_order: vals.sort_order,
+        parent_category_id: vals.type === 'subcategory' ? vals.parent_category_id : null,
+      }),
+    onSuccess: (_, vals) => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast.success(
+        vals.type === 'subcategory'
+          ? 'Subcategory created successfully'
+          : 'Category created successfully'
+      );
+      navigate('/admin/categories');
+    },
+    onError: (error: unknown) => {
+      const status = (error as { response?: { status?: number } })?.response?.status;
+      if (status === 409) {
+        setError('name', { message: 'A category with this name already exists.' });
+      } else if (status === 400) {
+        setError('parent_category_id', { message: 'Subcategories cannot have children.' });
+      } else {
+        toast.error('Failed to create category. Please try again.');
+      }
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (vals: CategoryFormValues) =>
+      updateCategory(id!, { name: vals.name, sort_order: vals.sort_order }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: ['category', id] });
+      toast.success('Category updated successfully');
+      navigate('/admin/categories');
+    },
+    onError: (error: unknown) => {
+      const status = (error as { response?: { status?: number } })?.response?.status;
+      if (status === 409) {
+        setError('name', { message: 'A category with this name already exists.' });
+      } else {
+        toast.error('Failed to update category. Please try again.');
+      }
+    },
+  });
+
+  const mutation = isEdit ? updateMutation : createMutation;
+  const isPending = mutation.isPending;
+
+  const onSubmit = handleSubmit((data: CategoryFormValues) => {
+    mutation.mutate(data);
+  });
+
+  return {
+    isEdit,
+    category,
+    categoryLoading,
+    categoryError,
+    rootCategories,
+    form,
+    watchType,
+    handleTypeChange,
+    parentField,
+    parentError,
+    isPending,
+    onSubmit,
+    navigate,
+  };
+}

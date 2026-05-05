@@ -1,213 +1,37 @@
-import { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useForm, useController } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useParams } from 'react-router-dom';
 import { ArrowLeft, Plus, Save, AlertCircle, Info } from 'lucide-react';
-import toast from 'react-hot-toast';
-import { getCategory, getCategories, createCategory, updateCategory } from '../../../api/categories';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import Badge from '../../../components/ui/Badge';
 import PageHeader from '../../../components/ui/PageHeader';
-
-// ─── Schema ───────────────────────────────────────────────────────────────────
-
-const schema = z
-  .object({
-    type: z.enum(['root', 'subcategory']),
-    parent_category_id: z.string().nullable(),
-    name: z
-      .string()
-      .min(2, 'Name must be at least 2 characters')
-      .max(100, 'Name is too long'),
-    sort_order: z
-      .number({ error: 'Sort order must be a number' })
-      .int('Sort order must be a whole number')
-      .min(1, 'Sort order must be at least 1'),
-  })
-  .superRefine((data, ctx) => {
-    if (data.type === 'subcategory' && !data.parent_category_id) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Please select a parent category',
-        path: ['parent_category_id'],
-      });
-    }
-  });
-
-type FormValues = z.infer<typeof schema>;
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
-function FormSkeleton() {
-  const bar = (cls: string) => (
-    <div className={`animate-pulse rounded bg-lng-blue-20 ${cls}`} />
-  );
-  return (
-    <div>
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          {bar('h-6 w-48')}
-          {bar('h-4 w-64')}
-        </div>
-        {bar('h-9 w-44 rounded')}
-      </div>
-      <div className="max-w-2xl space-y-5 rounded-lg bg-white p-8 shadow-sm">
-        {bar('h-4 w-32')}
-        <div className="border-b border-gray-200 pb-1" />
-        {bar('h-9 w-56 rounded')}
-        {bar('h-10 w-full')}
-        {bar('h-10 w-full')}
-        <div className="flex justify-end gap-3 border-t border-gray-200 pt-5">
-          {bar('h-9 w-20 rounded')}
-          {bar('h-9 w-36 rounded')}
-        </div>
-      </div>
-    </div>
-  );
-}
+import { CategoryFormSkeleton } from '../../../components/admin/categories/CategoryFormSkeleton';
+import { useCategoryForm } from '../../../hooks/admin/useCategoryForm';
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function CategoryFormPage() {
-  const { id }      = useParams<{ id: string }>();
-  const navigate    = useNavigate();
-  const queryClient = useQueryClient();
-  const isEdit      = !!id;
-
-  useEffect(() => {
-    document.title = isEdit
-      ? 'Edit Category — LNG Canada'
-      : 'Create Category — LNG Canada';
-    return () => { document.title = 'LNG Canada'; };
-  }, [isEdit]);
-
-  // ─── Queries ──────────────────────────────────────────────────────────────
-
+  const { id } = useParams<{ id: string }>();
   const {
-    data:    category,
-    isLoading: categoryLoading,
-    isError:   categoryError,
-  } = useQuery({
-    queryKey: ['category', id],
-    queryFn:  () => getCategory(id!),
-    enabled:  isEdit,
-  });
+    isEdit,
+    category,
+    categoryLoading,
+    categoryError,
+    rootCategories,
+    form,
+    watchType,
+    handleTypeChange,
+    parentField,
+    parentError,
+    isPending,
+    onSubmit,
+    navigate,
+  } = useCategoryForm(id);
 
-  const { data: allCategories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn:  getCategories,
-  });
-
-  // Root categories only for parent dropdown; exclude self in edit mode
-  const rootCategories = allCategories.filter(
-    (c) => c.parent_category_id === null && c.id !== id,
-  );
-
-  // ─── Form ─────────────────────────────────────────────────────────────────
-
-  const {
-    register,
-    handleSubmit,
-    setError,
-    reset,
-    control,
-    formState: { errors, isDirty },
-  } = useForm<FormValues>({
-    resolver:      zodResolver(schema),
-    defaultValues: { type: 'root', parent_category_id: null, name: '', sort_order: 1 },
-    mode:          'onSubmit',
-  });
-
-  // Pre-fill form when edit data arrives
-  useEffect(() => {
-    if (category) {
-      reset({
-        type:               category.parent_category_id ? 'subcategory' : 'root',
-        parent_category_id: category.parent_category_id,
-        name:               category.name,
-        sort_order:         category.sort_order,
-      });
-    }
-  }, [category, reset]);
-
-  // ─── Controlled fields ────────────────────────────────────────────────────
-
-  const { field: typeField } = useController({ name: 'type', control });
-
-  const {
-    field:      parentField,
-    fieldState: { error: parentError },
-  } = useController({ name: 'parent_category_id', control, defaultValue: null });
-
-  const watchType = typeField.value;
-
-  const handleTypeChange = (t: 'root' | 'subcategory') => {
-    typeField.onChange(t);
-    if (t === 'root') parentField.onChange(null);
-  };
-
-  // ─── Mutations ────────────────────────────────────────────────────────────
-
-  const createMutation = useMutation({
-    mutationFn: (vals: FormValues) =>
-      createCategory({
-        name:               vals.name,
-        sort_order:         vals.sort_order,
-        parent_category_id: vals.type === 'subcategory' ? vals.parent_category_id : null,
-      }),
-    onSuccess: (_, vals) => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast.success(
-        vals.type === 'subcategory'
-          ? 'Subcategory created successfully'
-          : 'Category created successfully',
-      );
-      navigate('/admin/categories');
-    },
-    onError: (error: unknown) => {
-      const status = (error as { response?: { status?: number } })?.response?.status;
-      if (status === 409) {
-        setError('name', { message: 'A category with this name already exists.' });
-      } else if (status === 400) {
-        setError('parent_category_id', { message: 'Subcategories cannot have children.' });
-      } else {
-        toast.error('Failed to create category. Please try again.');
-      }
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: (vals: FormValues) =>
-      updateCategory(id!, { name: vals.name, sort_order: vals.sort_order }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      queryClient.invalidateQueries({ queryKey: ['category', id] });
-      toast.success('Category updated successfully');
-      navigate('/admin/categories');
-    },
-    onError: (error: unknown) => {
-      const status = (error as { response?: { status?: number } })?.response?.status;
-      if (status === 409) {
-        setError('name', { message: 'A category with this name already exists.' });
-      } else {
-        toast.error('Failed to update category. Please try again.');
-      }
-    },
-  });
-
-  const mutation  = isEdit ? updateMutation : createMutation;
-  const isPending = mutation.isPending;
-
-  function onSubmit(data: FormValues) {
-    mutation.mutate(data);
-  }
+  const { register, formState: { errors, isDirty } } = form;
 
   // ─── Loading / error guards (edit mode) ──────────────────────────────────
 
-  if (isEdit && categoryLoading) return <FormSkeleton />;
+  if (isEdit && categoryLoading) return <CategoryFormSkeleton />;
 
   if (isEdit && (categoryError || !category)) {
     return (
@@ -270,7 +94,7 @@ export default function CategoryFormPage() {
           </h2>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
+        <form onSubmit={onSubmit} noValidate className="space-y-5">
 
           {/* ── Category Type ──────────────────────────────────────────────── */}
           {!isEdit ? (

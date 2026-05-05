@@ -24,6 +24,12 @@ export const VideoUploadStatus = {
 } as const;
 export type VideoUploadStatus = (typeof VideoUploadStatus)[keyof typeof VideoUploadStatus];
 
+export const VideoState = {
+  PUBLISHED: 'PUBLISHED',
+  UNPUBLISHED: 'UNPUBLISHED',
+} as const;
+export type VideoState = (typeof VideoState)[keyof typeof VideoState];
+
 export const DepartmentAccess = {
   ALL: 'ALL',
   RESTRICTED: 'RESTRICTED',
@@ -96,6 +102,7 @@ export interface Video {
   category_id: string;
   category?: Category;
   department_access: DepartmentAccess;
+  departments?: Department[];
   is_live: boolean;
   upload_status: VideoUploadStatus;
   thumbnail_sas_url: string;

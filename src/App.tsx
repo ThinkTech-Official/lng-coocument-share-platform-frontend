@@ -10,6 +10,7 @@ import {
 import { useAuthStore } from './store/authStore';
 import { Role } from './types';
 import Spinner from './components/ui/Spinner';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 import RoleRoute from './components/guards/RoleRoute';
 import ForceResetRoute from './components/guards/ForceResetRoute';
@@ -39,7 +40,7 @@ const ContractorDetailPage  = lazy(() => import('./pages/admin/contractors/Contr
 const DepartmentsListPage   = lazy(() => import('./pages/admin/departments/DepartmentsListPage'));
 const DepartmentFormPage    = lazy(() => import('./pages/admin/departments/DepartmentFormPage'));
 const CategoriesListPage    = lazy(() => import('./pages/admin/categories/CategoriesListPage'));
-const CategoryFormPage      = lazy(() => import('./pages/admin/categories/CategoryFormPage'));
+const CategoryFormPage      = lazy(() => import('./pages/admin/categories/CategoryDetailsPage'));
 const DocumentsListPage     = lazy(() => import('./pages/admin/documents/DocumentsListPage'));
 const UploadDocumentPage    = lazy(() => import('./pages/admin/documents/UploadDocumentPage'));
 const DocumentDetailPage    = lazy(() => import('./pages/admin/documents/DocumentDetailPage'));
@@ -150,5 +151,9 @@ const router = createBrowserRouter(
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <ErrorBoundary>
+      <RouterProvider router={router} />
+    </ErrorBoundary>
+  );
 }

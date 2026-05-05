@@ -1,23 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useForm, useController, useWatch } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRef, useState } from 'react';
+import { useWatch, useController } from 'react-hook-form';
 import {
   ArrowLeft, Upload, FileText, FileSpreadsheet,
   Image as ImageIcon, X,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
-import { type Document } from '../../../types';
-import { getCategories } from '../../../api/categories';
-import { getDepartments } from '../../../api/departments';
-import apiClient from '../../../api/axios';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import PageHeader from '../../../components/ui/PageHeader';
 import Spinner from '../../../components/ui/Spinner';
 import Toggle from '../../../components/ui/Toggle';
+import { useDocumentForm } from '../../../hooks/admin/useDocumentForm';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -31,28 +23,6 @@ const ALLOWED_TYPES = [
   'image/png',
 ];
 const MAX_SIZE = 52_428_800; // 50 MB
-
-// ─── Schema ───────────────────────────────────────────────────────────────────
-
-const schema = z
-  .object({
-    title:             z.string().min(2, 'Title must be at least 2 characters').max(200, 'Title is too long'),
-    description:       z.string().max(500, 'Description cannot exceed 500 characters'),
-    category_id:       z.string().min(1, 'Please select a category'),
-    department_access: z.enum(['ALL', 'RESTRICTED']),
-    department_ids:    z.array(z.string()),
-  })
-  .superRefine((data, ctx) => {
-    if (data.department_access === 'RESTRICTED' && data.department_ids.length === 0) {
-      ctx.addIssue({
-        code:    z.ZodIssueCode.custom,
-        message: 'Select at least one department',
-        path:    ['department_ids'],
-      });
-    }
-  });
-
-type FormValues = z.infer<typeof schema>;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -73,66 +43,33 @@ function getFileIcon(file: File) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function UploadDocumentPage() {
-  const navigate    = useNavigate();
-  const queryClient = useQueryClient();
+  const {
+    rootCategories,
+    catsLoading,
+    departments,
+    deptsLoading,
+    form,
+    file,
+    setFile,
+    fileError,
+    setFileError,
+    progress,
+    isPending,
+    onSubmit,
+    navigate,
+  } = useDocumentForm();
 
-  const [file, setFile]           = useState<File | null>(null);
-  const [fileError, setFileError] = useState<string | null>(null);
-  const [dragOver, setDragOver]   = useState(false);
-  const [progress, setProgress]   = useState<number | null>(null);
+  const { register, control, formState: { errors } } = form;
 
-  const fileInputRef   = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounterRef = useRef(0);
 
-  useEffect(() => {
-    document.title = 'Upload Document — LNG Canada';
-    return () => { document.title = 'LNG Canada'; };
-  }, []);
-
-  // ─── Queries ──────────────────────────────────────────────────────────────
-
-  const { data: allCategories = [], isLoading: catsLoading } = useQuery({
-    queryKey: ['categories'],
-    queryFn:  getCategories,
-  });
-
-  const { data: departments = [], isLoading: deptsLoading } = useQuery({
-    queryKey: ['departments'],
-    queryFn:  getDepartments,
-  });
-
-  const rootCategories = allCategories
-    .filter((c) => c.parent_category_id === null)
-    .sort((a, b) => a.sort_order - b.sort_order);
-
-  // ─── Form ─────────────────────────────────────────────────────────────────
-
-  const {
-    register,
-    handleSubmit,
-    control,
-    formState: { errors },
-  } = useForm<FormValues>({
-    resolver:      zodResolver(schema),
-    defaultValues: {
-      title:             '',
-      description:       '',
-      category_id:       '',
-      department_access: 'ALL',
-      department_ids:    [],
-    },
-    mode: 'onSubmit',
-  });
-
   const descValue = useWatch({ control, name: 'description' }) ?? '';
-  const charCount  = descValue.length;
+  const charCount = descValue.length;
 
   const { field: accessField } = useController({ name: 'department_access', control });
-
-  const {
-    field:      deptIdsField,
-    fieldState: { error: deptIdsError },
-  } = useController({ name: 'department_ids', control, defaultValue: [] });
+  const { field: deptIdsField, fieldState: { error: deptIdsError } } = useController({ name: 'department_ids', control });
 
   const watchAccess = accessField.value;
 
@@ -142,38 +79,6 @@ export default function UploadDocumentPage() {
       cur.includes(id) ? cur.filter((d) => d !== id) : [...cur, id],
     );
   };
-
-  // ─── Upload mutation ──────────────────────────────────────────────────────
-
-  const uploadMutation = useMutation({
-    mutationFn: async (formData: FormData) => {
-      setProgress(0);
-      const resp = await apiClient.post<Document>('/documents', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (evt) => {
-          const pct = Math.round((evt.loaded * 100) / (evt.total ?? evt.loaded));
-          setProgress(pct);
-        },
-      });
-      return resp.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['documents'] });
-      toast.success('Document uploaded successfully');
-      navigate('/admin/documents');
-    },
-    onError: (error: unknown) => {
-      const resp = (error as { response?: { status?: number; data?: { message?: string } } })?.response;
-      if (resp?.status === 400) {
-        toast.error(resp.data?.message ?? 'Upload failed. Please try again.');
-      } else {
-        toast.error('Upload failed. Please try again.');
-      }
-      setProgress(null);
-    },
-  });
-
-  const isUploading = uploadMutation.isPending;
 
   // ─── File handling ────────────────────────────────────────────────────────
 
@@ -200,7 +105,7 @@ export default function UploadDocumentPage() {
     if (--dragCounterRef.current === 0) setDragOver(false);
   };
   const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
-  const handleDrop     = (e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     dragCounterRef.current = 0;
     setDragOver(false);
@@ -208,31 +113,7 @@ export default function UploadDocumentPage() {
     if (dropped) validateAndSetFile(dropped);
   };
 
-  // ─── Submit ───────────────────────────────────────────────────────────────
-
-  const onSubmit = (data: FormValues) => {
-    if (!file) {
-      setFileError('Please select a file to upload.');
-      return;
-    }
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('title', data.title);
-    if (data.description) fd.append('description', data.description);
-    fd.append('category_id', data.category_id);
-    fd.append('access_type', data.department_access);
-    if (data.department_access === 'RESTRICTED' && data.department_ids) {
-      data.department_ids.forEach((id) => fd.append('department_ids', id));
-    }
-    for (const [key, value] of fd.entries()) {
-      console.log('FormData entry:', key, value);
-    }
-    uploadMutation.mutate(fd);
-  };
-
   const fileIcon = file ? getFileIcon(file) : null;
-
-  // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
     <>
@@ -243,7 +124,7 @@ export default function UploadDocumentPage() {
           <Button
             variant="outline"
             onClick={() => navigate('/admin/documents')}
-            disabled={isUploading}
+            disabled={isPending}
           >
             <ArrowLeft size={14} />
             Back to Documents
@@ -251,7 +132,7 @@ export default function UploadDocumentPage() {
         }
       />
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+      <form onSubmit={onSubmit} noValidate>
         <div className="grid gap-6 lg:grid-cols-3">
 
           {/* ── Left: Document details ──────────────────────────────────── */}
@@ -268,7 +149,7 @@ export default function UploadDocumentPage() {
                   label="Title"
                   type="text"
                   placeholder="Enter document title"
-                  disabled={isUploading}
+                  disabled={isPending}
                   error={errors.title?.message}
                   {...register('title')}
                 />
@@ -283,7 +164,7 @@ export default function UploadDocumentPage() {
                     id="description"
                     rows={3}
                     placeholder="Enter a brief description of this document (optional)"
-                    disabled={isUploading}
+                    disabled={isPending}
                     className={`
                       w-full resize-y rounded border px-3 py-2 text-sm text-lng-grey
                       placeholder:text-gray-400
@@ -316,7 +197,7 @@ export default function UploadDocumentPage() {
                   ) : (
                     <select
                       id="category_id"
-                      disabled={isUploading}
+                      disabled={isPending}
                       className={`
                         w-full rounded border px-3 py-2 text-sm text-lng-grey
                         focus:border-lng-blue focus:outline-none focus:ring-1 focus:ring-lng-blue
@@ -356,7 +237,7 @@ export default function UploadDocumentPage() {
                       accessField.onChange(val);
                       if (val === 'ALL') deptIdsField.onChange([]);
                     }}
-                    disabled={isUploading}
+                    disabled={isPending}
                   />
                 </div>
 
@@ -379,14 +260,7 @@ export default function UploadDocumentPage() {
                       </div>
                     ) : departments.length === 0 ? (
                       <p className="text-sm text-gray-400">
-                        No departments available.{' '}
-                        <button
-                          type="button"
-                          className="text-lng-blue underline hover:no-underline"
-                          onClick={() => navigate('/admin/departments')}
-                        >
-                          Create a department
-                        </button>
+                        No departments available.
                       </p>
                     ) : (
                       <div className="max-h-52 overflow-y-auto rounded border border-gray-200">
@@ -404,7 +278,7 @@ export default function UploadDocumentPage() {
                               <input
                                 type="checkbox"
                                 checked={checked}
-                                disabled={isUploading}
+                                disabled={isPending}
                                 onChange={() => toggleDepartment(dept.id)}
                                 className="h-4 w-4 rounded border-gray-300 text-lng-blue focus:ring-lng-blue"
                               />
@@ -449,16 +323,16 @@ export default function UploadDocumentPage() {
                 <div
                   role="button"
                   tabIndex={0}
-                  onClick={() => !isUploading && fileInputRef.current?.click()}
-                  onKeyDown={(e) => e.key === 'Enter' && !isUploading && fileInputRef.current?.click()}
+                  onClick={() => !isPending && fileInputRef.current?.click()}
+                  onKeyDown={(e) => e.key === 'Enter' && !isPending && fileInputRef.current?.click()}
                   onDragEnter={handleDragEnter}
                   onDragLeave={handleDragLeave}
                   onDragOver={handleDragOver}
-                  onDrop={!isUploading ? handleDrop : undefined}
+                  onDrop={!isPending ? handleDrop : undefined}
                   className={`
                     flex flex-col items-center justify-center rounded-lg border-2 border-dashed
                     p-8 text-center transition-all duration-200
-                    ${isUploading
+                    ${isPending
                       ? 'pointer-events-none cursor-not-allowed opacity-50'
                       : 'cursor-pointer'}
                     ${dragOver
@@ -492,7 +366,7 @@ export default function UploadDocumentPage() {
                   <button
                     type="button"
                     title="Remove file"
-                    disabled={isUploading}
+                    disabled={isPending}
                     onClick={() => { setFile(null); setFileError(null); }}
                     className="flex items-center gap-1.5 text-xs text-lng-red hover:underline disabled:opacity-40"
                   >
@@ -529,7 +403,7 @@ export default function UploadDocumentPage() {
           <Button
             type="button"
             variant="outline"
-            disabled={isUploading}
+            disabled={isPending}
             onClick={() => navigate('/admin/documents')}
           >
             Cancel
@@ -538,7 +412,8 @@ export default function UploadDocumentPage() {
             <Button
               type="submit"
               variant="primary"
-              disabled={!file || catsLoading || deptsLoading}
+              disabled={!file || catsLoading || deptsLoading || isPending}
+              loading={isPending}
             >
               <Upload size={15} />
               Upload Document
@@ -546,7 +421,6 @@ export default function UploadDocumentPage() {
           )}
         </div>
       </form>
-
     </>
   );
 }

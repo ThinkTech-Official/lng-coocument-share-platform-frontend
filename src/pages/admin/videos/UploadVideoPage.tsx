@@ -1,164 +1,72 @@
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useForm, useController, useWatch } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  ArrowLeft, Upload, Video as VideoIcon,
-  Image as ImageIcon, X, Info, AlertTriangle,
-} from 'lucide-react';
-import toast from 'react-hot-toast';
-import { type Video } from '../../../types';
-import { getCategories } from '../../../api/categories';
-import { getDepartments } from '../../../api/departments';
-import apiClient from '../../../api/axios';
+import { useRef, useState } from 'react';
+import { useWatch, useController } from 'react-hook-form';
+import { ArrowLeft, Upload, Film, X, AlertTriangle, Image as ImageIcon } from 'lucide-react';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import PageHeader from '../../../components/ui/PageHeader';
 import Spinner from '../../../components/ui/Spinner';
-// ─── Constants ────────────────────────────────────────────────────────────────
+import Toggle from '../../../components/ui/Toggle';
+import { useVideoForm } from '../../../hooks/admin/useVideoForm';
 
-const VIDEO_TYPES  = ['video/mp4', 'video/quicktime', 'video/x-msvideo'];
-const VIDEO_MAX    = 2_147_483_648; // 2 GB
-const THUMB_TYPES  = ['image/jpeg', 'image/png'];
-const THUMB_MAX    = 10_485_760;    // 10 MB
-
-// ─── Schema ───────────────────────────────────────────────────────────────────
-
-const schema = z
-  .object({
-    title:             z.string().min(2, 'Title must be at least 2 characters').max(200, 'Title is too long'),
-    description:       z.string().max(500, 'Description cannot exceed 500 characters'),
-    category_id:       z.string().min(1, 'Please select a category'),
-    department_access: z.enum(['ALL', 'RESTRICTED']),
-    department_ids:    z.array(z.string()),
-  })
-  .superRefine((data, ctx) => {
-    if (
-      data.department_access === 'RESTRICTED' &&
-      data.department_ids.length === 0
-    ) {
-      ctx.addIssue({
-        code:    z.ZodIssueCode.custom,
-        message: 'Select at least one department',
-        path:    ['department_ids'],
-      });
-    }
-  });
-
-type FormValues = z.infer<typeof schema>;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatFileSize(bytes: number): string {
-  if (bytes < 1_048_576)       return `${(bytes / 1_024).toFixed(1)} KB`;
-  if (bytes < 1_073_741_824)   return `${(bytes / 1_048_576).toFixed(1)} MB`;
-  return `${(bytes / 1_073_741_824).toFixed(2)} GB`;
+  if (bytes < 1_048_576) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1_048_576).toFixed(1)} MB`;
 }
 
-function formatDuration(secs: number): string {
-  const h = Math.floor(secs / 3_600);
-  const m = Math.floor((secs % 3_600) / 60);
-  const s = Math.floor(secs % 60);
-  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
-
-function readVideoDuration(file: File): Promise<number | null> {
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
-    const el  = document.createElement('video');
-    el.preload = 'metadata';
-    el.onloadedmetadata = () => { URL.revokeObjectURL(url); resolve(el.duration); };
-    el.onerror          = () => { URL.revokeObjectURL(url); resolve(null); };
-    el.src = url;
-  });
+function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function UploadVideoPage() {
-  const navigate    = useNavigate();
-  const queryClient = useQueryClient();
-
-  // ─── Video file state ─────────────────────────────────────────────────
-  const [videoFile,      setVideoFile]      = useState<File | null>(null);
-  const [videoFileError, setVideoFileError] = useState<string | null>(null);
-  const [videoDuration,  setVideoDuration]  = useState<number | null>(null);
-  const [videoDragOver,  setVideoDragOver]  = useState(false);
-  const videoDragCounterRef = useRef(0);
-  const videoInputRef       = useRef<HTMLInputElement>(null);
-
-  // ─── Thumbnail file state ─────────────────────────────────────────────
-  const [thumbFile,        setThumbFile]        = useState<File | null>(null);
-  const [thumbFileError,   setThumbFileError]   = useState<string | null>(null);
-  const [thumbPreview,     setThumbPreview]      = useState<string | null>(null);
-  const [thumbDragOver,    setThumbDragOver]     = useState(false);
-  const [highlightThumb,   setHighlightThumb]    = useState(false);
-  const thumbDragCounterRef = useRef(0);
-  const thumbInputRef        = useRef<HTMLInputElement>(null);
-
-  // ─── Upload state ─────────────────────────────────────────────────────
-  const [progress,  setProgress]  = useState<number | null>(null);
-
-  // ─── Thumbnail preview via FileReader ─────────────────────────────────
-  useEffect(() => {
-    if (!thumbFile) { setThumbPreview(null); return; }
-    const reader = new FileReader();
-    reader.onload = (e) => setThumbPreview(e.target?.result as string);
-    reader.readAsDataURL(thumbFile);
-  }, [thumbFile]);
-
-  // ─── Page title ───────────────────────────────────────────────────────
-  useEffect(() => {
-    document.title = 'Upload Video — LNG Canada';
-    return () => { document.title = 'LNG Canada'; };
-  }, []);
-
-  // ─── Queries ──────────────────────────────────────────────────────────
-
-  const { data: allCategories = [], isLoading: catsLoading } = useQuery({
-    queryKey: ['categories'],
-    queryFn:  getCategories,
-  });
-
-  const { data: departments = [], isLoading: deptsLoading } = useQuery({
-    queryKey: ['departments'],
-    queryFn:  getDepartments,
-  });
-
-  const rootCategories = allCategories
-    .filter((c) => c.parent_category_id === null)
-    .sort((a, b) => a.sort_order - b.sort_order);
-
-  // ─── Form ─────────────────────────────────────────────────────────────
-
   const {
-    register,
-    handleSubmit,
-    control,
-    formState: { errors },
-  } = useForm<FormValues>({
-    resolver:      zodResolver(schema),
-    defaultValues: {
-      title:             '',
-      description:       '',
-      category_id:       '',
-      department_access: 'ALL',
-      department_ids:    [],
-    },
-    mode: 'onSubmit',
-  });
+    rootCategories,
+    catsLoading,
+    departments,
+    deptsLoading,
+    form,
+    file: videoFile,
+    setFile: setVideoFile,
+    fileError: videoFileError,
+    setFileError: setVideoFileError,
+    validateAndSetVideo,
+    progress,
+    videoDuration,
+    setVideoDuration,
+    thumbFile,
+    setThumbFile,
+    thumbPreview,
+    thumbFileError,
+    setThumbFileError,
+    highlightThumb,
+    setHighlightThumb,
+    validateAndSetThumb,
+    isPending,
+    onSubmit,
+    navigate,
+  } = useVideoForm();
+
+  const { register, control, formState: { errors } } = form;
+
+  const [dragOver, setDragOver] = useState(false);
+  const [thumbDragOver, setThumbDragOver] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const thumbInputRef = useRef<HTMLInputElement>(null);
+  const dragCounterRef = useRef(0);
+  const thumbDragCounterRef = useRef(0);
 
   const descValue = useWatch({ control, name: 'description' }) ?? '';
   const charCount = descValue.length;
 
   const { field: accessField } = useController({ name: 'department_access', control });
-  const {
-    field:      deptIdsField,
-    fieldState: { error: deptIdsError },
-  } = useController({ name: 'department_ids', control, defaultValue: [] });
+  const { field: deptIdsField, fieldState: { error: deptIdsError } } = useController({ name: 'department_ids', control });
 
   const watchAccess = accessField.value;
 
@@ -169,99 +77,27 @@ export default function UploadVideoPage() {
     );
   };
 
-  // ─── Upload mutation ──────────────────────────────────────────────────
+  // ─── Video Drop ────────────────────────────────────────────────────────
 
-  const uploadMutation = useMutation({
-    mutationFn: async (formData: FormData) => {
-      setProgress(0);
-      const resp = await apiClient.post<Video>('/videos', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (evt) => {
-          const pct = Math.round((evt.loaded * 100) / (evt.total ?? evt.loaded));
-          setProgress(pct);
-        },
-      });
-      return resp.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['videos'] });
-      toast.success(
-        'Video uploaded successfully. It will be available once processing completes.',
-      );
-      navigate('/admin/videos');
-    },
-    onError: (error: unknown) => {
-      const resp = (error as { response?: { status?: number; data?: { message?: string } } })
-        ?.response;
-      if (resp?.status === 400) {
-        const msg = resp.data?.message ?? '';
-        if (msg.toLowerCase().includes('thumbnail')) {
-          toast.error('Thumbnail is required. Please select an image before uploading.');
-          setHighlightThumb(true);
-        } else if (msg) {
-          toast.error(msg);
-        } else {
-          toast.error('Upload failed. Please try again.');
-        }
-      } else {
-        toast.error('Upload failed. Please try again.');
-      }
-      setProgress(null);
-    },
-  });
-
-  const uploading = uploadMutation.isPending;
-
-  // ─── Video file handlers ──────────────────────────────────────────────
-
-  const validateAndSetVideo = async (f: File) => {
-    setVideoFileError(null);
-    if (!VIDEO_TYPES.includes(f.type)) {
-      setVideoFileError('File type not supported. Please upload MP4, MOV or AVI.');
-      return;
-    }
-    if (f.size > VIDEO_MAX) {
-      setVideoFileError('File size exceeds 2 GB limit.');
-      return;
-    }
-    setVideoFile(f);
-    const dur = await readVideoDuration(f);
-    setVideoDuration(dur);
-  };
-
-  const handleVideoDragEnter = (e: React.DragEvent) => {
+  const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
-    videoDragCounterRef.current++;
-    setVideoDragOver(true);
+    dragCounterRef.current++;
+    setDragOver(true);
   };
-  const handleVideoDragLeave = (e: React.DragEvent) => {
+  const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
-    if (--videoDragCounterRef.current === 0) setVideoDragOver(false);
+    if (--dragCounterRef.current === 0) setDragOver(false);
   };
-  const handleVideoDragOver = (e: React.DragEvent) => { e.preventDefault(); };
-  const handleVideoDrop = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    videoDragCounterRef.current = 0;
-    setVideoDragOver(false);
-    const f = e.dataTransfer.files[0];
-    if (f && !uploading) validateAndSetVideo(f);
+    dragCounterRef.current = 0;
+    setDragOver(false);
+    const dropped = e.dataTransfer.files[0];
+    if (dropped) validateAndSetVideo(dropped);
   };
 
-  // ─── Thumbnail file handlers ──────────────────────────────────────────
-
-  const validateAndSetThumb = (f: File) => {
-    setThumbFileError(null);
-    setHighlightThumb(false);
-    if (!THUMB_TYPES.includes(f.type)) {
-      setThumbFileError('Please upload a JPG or PNG image.');
-      return;
-    }
-    if (f.size > THUMB_MAX) {
-      setThumbFileError('Thumbnail size exceeds 10 MB limit.');
-      return;
-    }
-    setThumbFile(f);
-  };
+  // ─── Thumbnail Drop ───────────────────────────────────────────────────────
 
   const handleThumbDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
@@ -277,47 +113,20 @@ export default function UploadVideoPage() {
     e.preventDefault();
     thumbDragCounterRef.current = 0;
     setThumbDragOver(false);
-    const f = e.dataTransfer.files[0];
-    if (f && !uploading) validateAndSetThumb(f);
+    const dropped = e.dataTransfer.files[0];
+    if (dropped) validateAndSetThumb(dropped);
   };
-
-  // ─── Submit ───────────────────────────────────────────────────────────
-
-  const onSubmit = (data: FormValues) => {
-    if (!videoFile) {
-      setVideoFileError('Please select a video file to upload.');
-      return;
-    }
-    if (!thumbFile) {
-      setThumbFileError('Please select a thumbnail image.');
-      setHighlightThumb(true);
-      return;
-    }
-    const fd = new FormData();
-    fd.append('video',     videoFile);
-    fd.append('thumbnail', thumbFile);
-    fd.append('title',     data.title);
-    if (data.description) fd.append('description', data.description);
-    fd.append('category_id',       data.category_id);
-    fd.append('department_access', data.department_access);
-    if (data.department_access === 'RESTRICTED' && data.department_ids) {
-      data.department_ids.forEach((id) => fd.append('department_ids[]', id));
-    }
-    uploadMutation.mutate(fd);
-  };
-
-  // ─── Render ───────────────────────────────────────────────────────────
 
   return (
     <>
       <PageHeader
         title="Upload Video"
-        subtitle="Add a new video to the platform"
+        subtitle="Add a new video tutorial or presentation"
         actions={
           <Button
             variant="outline"
             onClick={() => navigate('/admin/videos')}
-            disabled={uploading}
+            disabled={isPending}
           >
             <ArrowLeft size={14} />
             Back to Videos
@@ -325,10 +134,10 @@ export default function UploadVideoPage() {
         }
       />
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+      <form onSubmit={onSubmit} noValidate>
         <div className="grid gap-6 lg:grid-cols-3">
 
-          {/* ── Left: form fields ──────────────────────────────────────── */}
+          {/* ── Left: Video details ─────────────────────────────────────── */}
           <div className="lg:col-span-2">
             <div className="rounded-lg bg-white p-6 shadow-sm">
               <div className="mb-6 border-b border-gray-200 pb-4">
@@ -336,18 +145,15 @@ export default function UploadVideoPage() {
               </div>
 
               <div className="space-y-5">
-
-                {/* Title */}
                 <Input
                   label="Title"
                   type="text"
                   placeholder="Enter video title"
-                  disabled={uploading}
+                  disabled={isPending}
                   error={errors.title?.message}
                   {...register('title')}
                 />
 
-                {/* Description */}
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium text-lng-grey" htmlFor="description">
                     Description
@@ -357,15 +163,13 @@ export default function UploadVideoPage() {
                     id="description"
                     rows={3}
                     placeholder="Enter a brief description of this video (optional)"
-                    disabled={uploading}
+                    disabled={isPending}
                     className={`
                       w-full resize-y rounded border px-3 py-2 text-sm text-lng-grey
                       placeholder:text-gray-400
-                      focus:outline-none focus:ring-1
+                      border-gray-300 focus:border-lng-blue focus:outline-none focus:ring-1 focus:ring-lng-blue
                       disabled:bg-gray-50 disabled:text-gray-400
-                      ${errors.description
-                        ? 'border-lng-red focus:border-lng-red focus:ring-lng-red'
-                        : 'border-gray-300 focus:border-lng-blue focus:ring-lng-blue'}
+                      ${errors.description ? 'border-lng-red focus:border-lng-red focus:ring-lng-red' : ''}
                     `}
                     {...register('description')}
                   />
@@ -379,7 +183,6 @@ export default function UploadVideoPage() {
                   </div>
                 </div>
 
-                {/* Category */}
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium text-lng-grey" htmlFor="category_id">
                     Category <span className="text-lng-red">*</span>
@@ -392,14 +195,14 @@ export default function UploadVideoPage() {
                   ) : (
                     <select
                       id="category_id"
-                      disabled={uploading}
+                      disabled={isPending}
                       className={`
                         w-full rounded border px-3 py-2 text-sm text-lng-grey
-                        focus:outline-none focus:ring-1
+                        focus:border-lng-blue focus:outline-none focus:ring-1 focus:ring-lng-blue
                         disabled:bg-gray-50 disabled:text-gray-400
                         ${errors.category_id
                           ? 'border-lng-red focus:border-lng-red focus:ring-lng-red'
-                          : 'border-gray-300 focus:border-lng-blue focus:ring-lng-blue'}
+                          : 'border-gray-300'}
                       `}
                       {...register('category_id')}
                     >
@@ -421,35 +224,20 @@ export default function UploadVideoPage() {
                   )}
                 </div>
 
-                {/* Department Access toggle */}
                 <div className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-lng-grey">
-                    Department Access <span className="text-lng-red">*</span>
-                  </span>
-                  <div className="inline-flex overflow-hidden rounded border border-gray-300">
-                    {(['ALL', 'RESTRICTED'] as const).map((val) => (
-                      <button
-                        key={val}
-                        type="button"
-                        disabled={uploading}
-                        onClick={() => {
-                          accessField.onChange(val);
-                          if (val === 'ALL') deptIdsField.onChange([]);
-                        }}
-                        className={`
-                          px-5 py-2 text-sm font-medium transition-colors
-                          ${watchAccess === val
-                            ? 'bg-lng-blue text-white'
-                            : 'bg-white text-lng-grey hover:bg-gray-50'}
-                        `}
-                      >
-                        {val === 'ALL' ? 'All Departments' : 'Restricted'}
-                      </button>
-                    ))}
-                  </div>
+                  <Toggle
+                    label="Restrict Access"
+                    description="Only allow specific departments to view this video."
+                    checked={watchAccess === 'RESTRICTED'}
+                    onChange={(checked) => {
+                      const val = checked ? 'RESTRICTED' : 'ALL';
+                      accessField.onChange(val);
+                      if (val === 'ALL') deptIdsField.onChange([]);
+                    }}
+                    disabled={isPending}
+                  />
                 </div>
 
-                {/* Department checkboxes — animated slide down */}
                 <div
                   style={{
                     maxHeight:  watchAccess === 'RESTRICTED' ? '600px' : '0',
@@ -466,17 +254,6 @@ export default function UploadVideoPage() {
                         <Spinner size="sm" />
                         <span className="text-sm text-gray-400">Loading departments…</span>
                       </div>
-                    ) : departments.length === 0 ? (
-                      <p className="text-sm text-gray-400">
-                        No departments available.{' '}
-                        <button
-                          type="button"
-                          className="text-lng-blue underline hover:no-underline"
-                          onClick={() => navigate('/admin/departments')}
-                        >
-                          Create a department
-                        </button>
-                      </p>
                     ) : (
                       <div className="max-h-52 overflow-y-auto rounded border border-gray-200">
                         {departments.map((dept) => {
@@ -485,15 +262,15 @@ export default function UploadVideoPage() {
                             <label
                               key={dept.id}
                               className={`
-                                flex cursor-pointer items-center gap-3 px-4 py-2.5
-                                text-sm transition-colors select-none
+                                flex cursor-pointer items-center gap-3 px-4 py-2.5 text-sm
+                                transition-colors select-none
                                 ${checked ? 'bg-lng-blue-20' : 'hover:bg-gray-50'}
                               `}
                             >
                               <input
                                 type="checkbox"
                                 checked={checked}
-                                disabled={uploading}
+                                disabled={isPending}
                                 onChange={() => toggleDepartment(dept.id)}
                                 className="h-4 w-4 rounded border-gray-300 text-lng-blue focus:ring-lng-blue"
                               />
@@ -513,28 +290,17 @@ export default function UploadVideoPage() {
             </div>
           </div>
 
-          {/* ── Right: video zone + thumbnail zone ─────────────────────── */}
-          <div className="flex flex-col gap-6">
-
-            {/* Video file card */}
+          {/* ── Right: Upload zone ──────────────────────────────────────── */}
+          <div>
             <div className="rounded-lg bg-white p-6 shadow-sm">
-              <div className="mb-4 border-b border-gray-200 pb-4">
+              <div className="mb-6 border-b border-gray-200 pb-4">
                 <h2 className="text-sm font-bold text-lng-grey">Video File</h2>
               </div>
 
-              {/* Required note */}
-              <div className="mb-4 flex items-start gap-2">
-                <Info size={14} className="mt-0.5 shrink-0 text-lng-blue" />
-                <p className="text-xs text-lng-grey">
-                  Required — video cannot be uploaded without a file
-                </p>
-              </div>
-
-              {/* Hidden file input */}
               <input
-                ref={videoInputRef}
+                ref={fileInputRef}
                 type="file"
-                accept=".mp4,.mov,.avi"
+                accept="video/mp4,video/quicktime,video/x-msvideo,video/webm"
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
@@ -543,39 +309,36 @@ export default function UploadVideoPage() {
                 }}
               />
 
-              {/* Drop zone or selected file */}
               {!videoFile ? (
                 <div
                   role="button"
                   tabIndex={0}
-                  onClick={() => !uploading && videoInputRef.current?.click()}
-                  onKeyDown={(e) => e.key === 'Enter' && !uploading && videoInputRef.current?.click()}
-                  onDragEnter={handleVideoDragEnter}
-                  onDragLeave={handleVideoDragLeave}
-                  onDragOver={handleVideoDragOver}
-                  onDrop={!uploading ? handleVideoDrop : undefined}
+                  onClick={() => !isPending && fileInputRef.current?.click()}
+                  onKeyDown={(e) => e.key === 'Enter' && !isPending && fileInputRef.current?.click()}
+                  onDragEnter={handleDragEnter}
+                  onDragLeave={handleDragLeave}
+                  onDragOver={handleDragOver}
+                  onDrop={!isPending ? handleDrop : undefined}
                   className={`
                     flex flex-col items-center justify-center rounded-lg border-2 border-dashed
                     p-8 text-center transition-all duration-200
-                    ${uploading
+                    ${isPending
                       ? 'pointer-events-none cursor-not-allowed opacity-50'
                       : 'cursor-pointer'}
-                    ${videoDragOver
+                    ${dragOver
                       ? 'border-lng-blue bg-lng-blue-20 cursor-copy'
                       : 'border-lng-blue-40 hover:border-lng-blue hover:bg-lng-blue-20'}
                   `}
                 >
-                  <VideoIcon size={40} className="mb-3 text-lng-blue-40" />
+                  <Upload size={40} className="mb-3 text-lng-blue-40" />
                   <p className="mb-1 text-sm font-medium text-lng-grey">
                     Drag and drop your video here
                   </p>
                   <p className="mb-4 text-xs text-gray-400">or click to browse</p>
-                  <p className="text-xs text-gray-400">Accepted: MP4, MOV, AVI</p>
-                  <p className="text-xs text-gray-400">Max size: 2 GB</p>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-3 rounded-lg border border-gray-200 p-5 text-center">
-                  <VideoIcon size={36} className="text-lng-blue" />
+                  <Film size={36} className="text-lng-blue" />
                   <div className="w-full">
                     <p
                       className="break-all text-sm font-bold text-lng-grey"
@@ -593,7 +356,7 @@ export default function UploadVideoPage() {
                   <button
                     type="button"
                     title="Remove video"
-                    disabled={uploading}
+                    disabled={isPending}
                     onClick={() => { setVideoFile(null); setVideoFileError(null); setVideoDuration(null); }}
                     className="flex items-center gap-1.5 text-xs text-lng-red hover:underline disabled:opacity-40"
                   >
@@ -640,16 +403,16 @@ export default function UploadVideoPage() {
                 <div
                   role="button"
                   tabIndex={0}
-                  onClick={() => !uploading && thumbInputRef.current?.click()}
-                  onKeyDown={(e) => e.key === 'Enter' && !uploading && thumbInputRef.current?.click()}
+                  onClick={() => !isPending && thumbInputRef.current?.click()}
+                  onKeyDown={(e) => e.key === 'Enter' && !isPending && thumbInputRef.current?.click()}
                   onDragEnter={handleThumbDragEnter}
                   onDragLeave={handleThumbDragLeave}
                   onDragOver={handleThumbDragOver}
-                  onDrop={!uploading ? handleThumbDrop : undefined}
+                  onDrop={!isPending ? handleThumbDrop : undefined}
                   className={`
                     flex flex-col items-center justify-center rounded-lg border-2 border-dashed
                     p-6 text-center transition-all duration-200
-                    ${uploading
+                    ${isPending
                       ? 'pointer-events-none cursor-not-allowed opacity-50'
                       : 'cursor-pointer'}
                     ${highlightThumb
@@ -684,7 +447,7 @@ export default function UploadVideoPage() {
                     <button
                       type="button"
                       title="Remove thumbnail"
-                      disabled={uploading}
+                      disabled={isPending}
                       onClick={() => {
                         setThumbFile(null);
                         setThumbFileError(null);
@@ -743,7 +506,7 @@ export default function UploadVideoPage() {
             <Button
               type="button"
               variant="outline"
-              disabled={uploading}
+              disabled={isPending}
               onClick={() => navigate('/admin/videos')}
             >
               Cancel
@@ -752,7 +515,7 @@ export default function UploadVideoPage() {
               type="submit"
               variant="primary"
               disabled={
-                !videoFile || !thumbFile || catsLoading || deptsLoading || uploading
+                !videoFile || !thumbFile || catsLoading || deptsLoading || isPending
               }
             >
               <Upload size={15} />

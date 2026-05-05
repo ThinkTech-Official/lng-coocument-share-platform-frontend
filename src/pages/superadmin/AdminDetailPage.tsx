@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams, useBlocker } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -146,7 +146,6 @@ export default function AdminDetailPage() {
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [editSubmitted, setEditSubmitted]       = useState(false);
 
   // ─── Query ──────────────────────────────────────────────────────────────────
 
@@ -181,12 +180,6 @@ export default function AdminDetailPage() {
     return () => { document.title = 'LNG Canada'; };
   }, [admin]);
 
-  // ─── Unsaved changes blocker ────────────────────────────────────────────────
-
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      isDirty && !editSubmitted && currentLocation.pathname !== nextLocation.pathname
-  );
 
   // ─── Mutations ──────────────────────────────────────────────────────────────
 
@@ -223,7 +216,6 @@ export default function AdminDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admins'] });
       toast.success('Admin account deleted');
-      setEditSubmitted(true);
       navigate('/superadmin/admins');
     },
     onError: () => toast.error('Failed to delete. Please try again.'),
@@ -401,23 +393,6 @@ export default function AdminDetailPage() {
         message={`Are you sure you want to delete ${admin.name}? This action cannot be undone. The admin will lose all access immediately.`}
       />
 
-      {/* ── Unsaved changes dialog ── */}
-      <Modal
-        open={blocker.state === 'blocked'}
-        onClose={() => blocker.reset?.()}
-        title="Discard Changes"
-        maxWidth="sm"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => blocker.reset?.()}>Keep Editing</Button>
-            <Button variant="danger" onClick={() => blocker.proceed?.()}>Discard</Button>
-          </>
-        }
-      >
-        <p className="text-sm text-lng-grey">
-          You have unsaved changes. Are you sure you want to leave?
-        </p>
-      </Modal>
     </>
   );
 }

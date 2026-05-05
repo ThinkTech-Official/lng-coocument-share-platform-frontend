@@ -1,12 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useForm, useWatch } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   ArrowLeft,
-  AlertCircle,
   FileText,
   FileSpreadsheet,
   Image as ImageIcon,
@@ -18,20 +13,17 @@ import {
   Upload,
   X,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
-import { type Document, DocumentState, DepartmentAccess } from '../../../types';
-import { getDocument, updateDocument, updateDocumentStatus, deleteDocument } from '../../../api/documents';
-import { getCategories } from '../../../api/categories';
-import { getDepartments } from '../../../api/departments';
-import apiClient from '../../../api/axios';
+import { DocumentState, DepartmentAccess } from '../../../types';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import Badge from '../../../components/ui/Badge';
 import PageHeader from '../../../components/ui/PageHeader';
 import Spinner from '../../../components/ui/Spinner';
-import Modal from '../../../components/ui/Modal';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import Toggle from '../../../components/ui/Toggle';
+import { DocumentFormSkeleton } from '../../../components/admin/documents/DocumentFormSkeleton';
+import { useDocumentForm } from '../../../hooks/admin/useDocumentForm';
+import Modal from '@/components/ui/Modal';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -46,16 +38,6 @@ const ALLOWED_TYPES = [
 ];
 const MAX_SIZE = 52_428_800; // 50 MB
 
-
-// ─── Schema ───────────────────────────────────────────────────────────────────
-
-const editSchema = z.object({
-  title:       z.string().min(2, 'Title must be at least 2 characters').max(200, 'Title is too long'),
-  description: z.string().max(500, 'Description cannot exceed 500 characters'),
-  category_id: z.string().min(1, 'Please select a category'),
-});
-type EditForm = z.infer<typeof editSchema>;
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDate(iso: string) {
@@ -67,10 +49,6 @@ function formatDate(iso: string) {
 function formatFileSize(bytes: number) {
   if (bytes < 1_048_576) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1_048_576).toFixed(1)} MB`;
-}
-
-function sameSet(a: string[], b: string[]) {
-  return JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
 }
 
 function getFileIconFromUrl(url: string) {
@@ -97,292 +75,49 @@ function getFileIconFromFile(file: File) {
   return { Icon: FileText, cls: 'text-lng-grey' };
 }
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
-function PageSkeleton() {
-  const bar = (cls: string) => (
-    <div className={`animate-pulse rounded bg-lng-blue-20 ${cls}`} />
-  );
-  return (
-    <>
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          {bar('h-7 w-52')}
-          {bar('h-4 w-72')}
-        </div>
-        {bar('h-9 w-44 rounded')}
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left skeleton */}
-        <div className="space-y-6 lg:col-span-2">
-          <div className="rounded-lg bg-white p-6 shadow-sm space-y-4">
-            {bar('h-4 w-40')}
-            <div className="border-b border-gray-200 pb-2" />
-            {bar('h-10 w-full')}
-            {bar('h-24 w-full')}
-            {bar('h-10 w-full')}
-            <div className="flex justify-end gap-3 pt-2">
-              {bar('h-9 w-24 rounded')}
-              {bar('h-9 w-36 rounded')}
-            </div>
-          </div>
-          <div className="rounded-lg bg-white p-6 shadow-sm space-y-4">
-            {bar('h-4 w-36')}
-            <div className="border-b border-gray-200 pb-2" />
-            {bar('h-16 w-full rounded-lg')}
-            {bar('h-9 w-full rounded')}
-            <div className="border-t border-gray-200 pt-4 space-y-3">
-              {bar('h-3 w-24')}
-              {bar('h-24 w-full rounded-lg')}
-              {bar('h-9 w-full rounded')}
-            </div>
-          </div>
-        </div>
-
-        {/* Right skeleton */}
-        <div className="space-y-6">
-          <div className="rounded-lg bg-white p-6 shadow-sm space-y-4">
-            {bar('h-4 w-32')}
-            <div className="border-b border-gray-200 pb-2" />
-            {bar('h-6 w-24 rounded-full')}
-            {bar('h-4 w-56')}
-            {bar('h-9 w-full rounded')}
-          </div>
-          <div className="rounded-lg bg-white p-6 shadow-sm space-y-4">
-            {bar('h-4 w-40')}
-            <div className="border-b border-gray-200 pb-2" />
-            {bar('h-6 w-28 rounded-full')}
-            {bar('h-9 w-full rounded')}
-            {bar('h-32 w-full rounded')}
-            {bar('h-9 w-full rounded')}
-          </div>
-          <div className="rounded-lg bg-white p-6 shadow-sm space-y-4 border border-lng-red-40">
-            {bar('h-4 w-28')}
-            <div className="border-b border-gray-200 pb-2" />
-            {bar('h-4 w-full')}
-            {bar('h-9 w-full rounded')}
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DocumentDetailPage() {
-  const { id }      = useParams<{ id: string }>();
-  const navigate    = useNavigate();
-  const queryClient = useQueryClient();
+  const { id } = useParams<{ id: string }>();
+  const {
+    document: doc,
+    docLoading,
+    docError,
+    rootCategories,
+    catsLoading,
+    departments,
+    deptsLoading,
+    form,
+    reuploadFile,
+    setReuploadFile,
+    reuploadFileError,
+    setReuploadFileError,
+    reuploadProgress,
+    localAccess,
+    setLocalAccess,
+    selectedDeptIds,
+    setSelectedDeptIds,
+    deptsDirty,
+    isPending,
+    onSubmit,
+    reuploadMutation,
+    statusMutation,
+    deptsMutation,
+    deleteMutation,
+    navigate,
+  } = useDocumentForm(id);
 
-  // ─── Reupload state ────────────────────────────────────────────────────
-  const [reuploadFile, setReuploadFile]           = useState<File | null>(null);
-  const [reuploadFileError, setReuploadFileError] = useState<string | null>(null);
-  const [reuploadDragOver, setReuploadDragOver]   = useState(false);
-  const [reuploadProgress, setReuploadProgress]   = useState<number | null>(null);
-  const reuploadFileInputRef   = useRef<HTMLInputElement>(null);
+  const { register, control, reset, formState: { errors, isDirty } } = form;
+
+  // ─── Reupload UI state ─────────────────────────────────────────────────
+  const [reuploadDragOver, setReuploadDragOver] = useState(false);
+  const reuploadFileInputRef = useRef<HTMLInputElement>(null);
   const reuploadDragCounterRef = useRef(0);
-
-  // ─── Department access state ───────────────────────────────────────────
-  const [origAccess, setOrigAccess]           = useState<DepartmentAccess>(DepartmentAccess.ALL);
-  const [localAccess, setLocalAccess]         = useState<DepartmentAccess>(DepartmentAccess.ALL);
-  const [origDeptIds, setOrigDeptIds]         = useState<string[]>([]);
-  const [selectedDeptIds, setSelectedDeptIds] = useState<string[]>([]);
 
   // ─── Dialog state ──────────────────────────────────────────────────────
   const [showUnpublishConfirm, setShowUnpublishConfirm] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm]       = useState(false);
-  const [showAllDeptConfirm, setShowAllDeptConfirm]     = useState(false);
-
-  // ─── Inline error state ────────────────────────────────────────────────
-  const [detailsConflictError, setDetailsConflictError] = useState<string | null>(null);
-
-  // ─── Queries ───────────────────────────────────────────────────────────
-
-  const {
-    data: doc,
-    isLoading: docLoading,
-    isError:   docError,
-  } = useQuery({
-    queryKey: ['document', id],
-    queryFn:  () => getDocument(id!),
-    enabled:  !!id,
-  });
-
-  const { data: allCategories = [], isLoading: catsLoading } = useQuery({
-    queryKey: ['categories'],
-    queryFn:  getCategories,
-  });
-
-  const { data: departments = [], isLoading: deptsLoading } = useQuery({
-    queryKey: ['departments'],
-    queryFn:  getDepartments,
-  });
-
-  const rootCategories = allCategories
-    .filter((c) => c.parent_category_id === null)
-    .sort((a, b) => a.sort_order - b.sort_order);
-
-  // ─── Edit details form ─────────────────────────────────────────────────
-
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    formState: { errors, isDirty },
-  } = useForm<EditForm>({
-    resolver:      zodResolver(editSchema),
-    defaultValues: { title: '', description: '', category_id: '' },
-    mode: 'onSubmit',
-  });
-
-  const descValue = useWatch({ control, name: 'description' }) ?? '';
-  const charCount = descValue.length;
-
-  // ─── Initialise form & dept state when doc loads ───────────────────────
-
-  useEffect(() => {
-    if (!doc) return;
-    reset({
-      title:       doc.title,
-      description: doc.description ?? '',
-      category_id: doc.category_id ?? doc.category?.id ?? '',
-    });
-    const access = (doc.access_type ?? DepartmentAccess.ALL) as DepartmentAccess;
-    const ids    = (doc.document_departments ?? []).map((dd: any) => dd.department_id);
-    setOrigAccess(access);
-    setLocalAccess(access);
-    setOrigDeptIds(ids);
-    setSelectedDeptIds(ids);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [doc?.id]);
-
-  // ─── Browser tab title ─────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (doc) document.title = `${doc.title} — LNG Canada`;
-    return () => { document.title = 'LNG Canada'; };
-  }, [doc?.title]);
-
-  // ─── Mutations ─────────────────────────────────────────────────────────
-
-  const updateDetailsMutation = useMutation({
-    mutationFn: (data: EditForm) =>
-      updateDocument(id!, {
-        title:       data.title,
-        description: data.description,
-        category_id: data.category_id,
-      }),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['document', id] });
-      queryClient.invalidateQueries({ queryKey: ['documents'] });
-      toast.success('Document details updated');
-      setDetailsConflictError(null);
-      reset({
-        title:       data.title,
-        description: data.description ?? '',
-        category_id: data.category_id,
-      });
-    },
-    onError: (error: unknown) => {
-      const status = (error as { response?: { status?: number } })?.response?.status;
-      if (status === 409) {
-        setDetailsConflictError('A document with this title already exists.');
-      } else {
-        toast.error('Failed to update. Please try again.');
-      }
-    },
-  });
-
-  const reuploadMutation = useMutation({
-    mutationFn: async () => {
-      if (!reuploadFile) return;
-      setReuploadProgress(0);
-      const fd = new FormData();
-      fd.append('file', reuploadFile);
-      const resp = await apiClient.patch<Document>(`/documents/${id}/reupload`, fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (evt) => {
-          const pct = Math.round((evt.loaded * 100) / (evt.total ?? evt.loaded));
-          setReuploadProgress(pct);
-        },
-      });
-      return resp.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['document', id] });
-      queryClient.invalidateQueries({ queryKey: ['documents'] });
-      toast.success('Document file updated successfully');
-      setReuploadFile(null);
-      setReuploadProgress(null);
-    },
-    onError: () => {
-      toast.error('Reupload failed. Please try again.');
-      setReuploadProgress(null);
-    },
-  });
-
-  const statusMutation = useMutation({
-    mutationFn: (newState: DocumentState) => updateDocumentStatus(id!, newState),
-    onMutate:   () => ({ prevState: doc?.state }),
-    onSuccess:  (_, newState, ctx) => {
-      queryClient.invalidateQueries({ queryKey: ['document', id] });
-      queryClient.invalidateQueries({ queryKey: ['documents'] });
-      setShowUnpublishConfirm(false);
-      if (newState === DocumentState.PUBLISHED) {
-        toast.success(
-          ctx?.prevState === DocumentState.UNPUBLISHED
-            ? 'Document re-published'
-            : 'Document published successfully',
-        );
-      } else {
-        toast.success('Document unpublished');
-      }
-    },
-    onError: () => toast.error('Failed to update document status. Please try again.'),
-  });
-
-  const deptsMutation = useMutation({
-    mutationFn: () =>
-      apiClient
-        .patch(`/documents/${id}/departments`, {
-          access_type:    localAccess,
-          department_ids: localAccess === DepartmentAccess.RESTRICTED ? selectedDeptIds : [],
-        })
-        .then((r) => r.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['document', id] });
-      queryClient.invalidateQueries({ queryKey: ['documents'] });
-      toast.success('Department access updated');
-      setOrigAccess(localAccess);
-      setOrigDeptIds(localAccess === DepartmentAccess.RESTRICTED ? [...selectedDeptIds] : []);
-    },
-    onError: () => toast.error('Failed to update access. Please try again.'),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: () => deleteDocument(id!),
-    onSuccess:  () => {
-      queryClient.invalidateQueries({ queryKey: ['documents'] });
-      toast.success('Document deleted successfully');
-      navigate('/admin/documents');
-    },
-    onError: () => toast.error('Failed to delete. Please try again.'),
-  });
-
-  // ─── Derived ───────────────────────────────────────────────────────────
-
-  const anyPending =
-    updateDetailsMutation.isPending ||
-    reuploadMutation.isPending      ||
-    statusMutation.isPending        ||
-    deptsMutation.isPending         ||
-    deleteMutation.isPending;
-
-  const deptsDirty =
-    localAccess !== origAccess || !sameSet(selectedDeptIds, origDeptIds);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showAllDeptConfirm, setShowAllDeptConfirm] = useState(false);
 
   // ─── Reupload handlers ─────────────────────────────────────────────────
 
@@ -414,7 +149,7 @@ export default function DocumentDetailPage() {
     reuploadDragCounterRef.current = 0;
     setReuploadDragOver(false);
     const dropped = e.dataTransfer.files[0];
-    if (dropped && !anyPending) validateAndSetReuploadFile(dropped);
+    if (dropped && !isPending) validateAndSetReuploadFile(dropped);
   };
 
   // ─── Department access handlers ────────────────────────────────────────
@@ -442,32 +177,19 @@ export default function DocumentDetailPage() {
 
   // ─── Loading ───────────────────────────────────────────────────────────
 
-  if (docLoading) return <PageSkeleton />;
+  if (docLoading) return <DocumentFormSkeleton />;
 
   // ─── Error ─────────────────────────────────────────────────────────────
 
   if (docError || !doc) {
     return (
-      <>
-        <PageHeader
-          title="Document Details"
-          actions={
-            <Button variant="outline" onClick={() => navigate('/admin/documents')}>
-              <ArrowLeft size={14} />
-              Back to Documents
-            </Button>
-          }
-        />
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <AlertCircle size={48} className="mb-4 text-lng-red" />
-          <h2 className="mb-2 text-lg font-bold text-lng-grey">Document Not Found</h2>
-          <p className="mb-6 text-sm text-gray-500">This document could not be loaded.</p>
-          <Button variant="outline" onClick={() => navigate('/admin/documents')}>
-            <ArrowLeft size={14} />
-            Back to Documents
-          </Button>
-        </div>
-      </>
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <h2 className="mb-2 text-lg font-bold text-lng-grey">Document Not Found</h2>
+        <Button variant="outline" onClick={() => navigate('/admin/documents')}>
+          <ArrowLeft size={14} />
+          Back to Documents
+        </Button>
+      </div>
     );
   }
 
@@ -479,7 +201,7 @@ export default function DocumentDetailPage() {
     </div>
   );
 
-  // ─── File icon for current blob_url ───────────────────────────────────
+  // ─── File icons ───────────────────────────────────
 
   const currentFileIcon = getFileIconFromUrl(doc.document_url ?? '');
   const currentFileName = getFileNameFromUrl(doc.document_url ?? '');
@@ -501,8 +223,6 @@ export default function DocumentDetailPage() {
       ? 'Visible to contractors with department access.'
       : 'Hidden from contractors. Can be re-published.';
 
-  // ─── Render ────────────────────────────────────────────────────────────
-
   return (
     <>
       <PageHeader
@@ -512,7 +232,7 @@ export default function DocumentDetailPage() {
           <Button
             variant="outline"
             onClick={() => navigate('/admin/documents')}
-            disabled={anyPending}
+            disabled={isPending}
           >
             <ArrowLeft size={14} />
             Back to Documents
@@ -520,51 +240,23 @@ export default function DocumentDetailPage() {
         }
       />
 
-      {/* ── State banner ─────────────────────────────────────────────────── */}
-      {doc.state === DocumentState.DRAFT && (
-        <div className="mb-6 flex items-center gap-3 rounded bg-gray-100 px-4 py-3">
-          <FileText size={18} className="shrink-0 text-lng-grey" />
-          <p className="text-sm text-lng-grey">
-            This document is a draft and not visible to contractors.
-          </p>
-        </div>
-      )}
-      {doc.state === DocumentState.UNPUBLISHED && (
-        <div className="mb-6 flex items-center gap-3 rounded bg-lng-yellow px-4 py-3">
-          <EyeOff size={18} className="shrink-0 text-lng-grey" />
-          <p className="text-sm text-lng-grey">
-            This document is unpublished and not visible to contractors.
-          </p>
-        </div>
-      )}
-
-      {/* ── Two-column layout ─────────────────────────────────────────────── */}
       <div className="grid gap-6 lg:grid-cols-3">
-
-        {/* ── Left column (2/3) ─────────────────────────────────────────── */}
         <div className="space-y-6 lg:col-span-2">
-
           {/* Edit Details card */}
           <div className="rounded-lg bg-white p-6 shadow-sm">
             {cardHeading('Document Details')}
 
-            <form
-              onSubmit={handleSubmit((data) => updateDetailsMutation.mutate(data))}
-              noValidate
-            >
+            <form onSubmit={onSubmit} noValidate>
               <div className="space-y-5">
-
-                {/* Title */}
                 <Input
                   label="Title"
                   type="text"
                   placeholder="Enter document title"
-                  disabled={anyPending}
+                  disabled={isPending}
                   error={errors.title?.message}
                   {...register('title')}
                 />
 
-                {/* Description */}
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium text-lng-grey" htmlFor="description">
                     Description
@@ -574,7 +266,7 @@ export default function DocumentDetailPage() {
                     id="description"
                     rows={3}
                     placeholder="Enter a brief description of this document (optional)"
-                    disabled={anyPending}
+                    disabled={isPending}
                     className={`
                       w-full resize-y rounded border px-3 py-2 text-sm text-lng-grey
                       placeholder:text-gray-400
@@ -590,13 +282,12 @@ export default function DocumentDetailPage() {
                     {errors.description
                       ? <p className="text-xs text-lng-red">{errors.description.message}</p>
                       : <span />}
-                    <p className={`text-xs ${charCount > 450 ? 'text-lng-red' : 'text-lng-grey'}`}>
-                      {charCount} / 500 characters
+                    <p className={`text-xs ${(form.watch('description')?.length ?? 0) > 450 ? 'text-lng-red' : 'text-lng-grey'}`}>
+                      {form.watch('description')?.length ?? 0} / 500 characters
                     </p>
                   </div>
                 </div>
 
-                {/* Category */}
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium text-lng-grey" htmlFor="category_id">
                     Category <span className="text-lng-red">*</span>
@@ -609,7 +300,7 @@ export default function DocumentDetailPage() {
                   ) : (
                     <select
                       id="category_id"
-                      disabled={anyPending}
+                      disabled={isPending}
                       className={`
                         w-full rounded border px-3 py-2 text-sm text-lng-grey
                         focus:outline-none focus:ring-1
@@ -637,29 +328,15 @@ export default function DocumentDetailPage() {
                     <p className="text-xs text-lng-red">{errors.category_id.message}</p>
                   )}
                 </div>
-
-                {/* Inline conflict error */}
-                {detailsConflictError && (
-                  <p className="text-sm text-lng-red">{detailsConflictError}</p>
-                )}
-
               </div>
 
-              {/* Form actions */}
               <div className="mt-6 flex items-center justify-end gap-3">
                 {isDirty && (
                   <Button
                     type="button"
                     variant="ghost"
-                    disabled={anyPending}
-                    onClick={() => {
-                      reset({
-                        title:       doc.title,
-                        description: doc.description ?? '',
-                        category_id: doc.category_id,
-                      });
-                      setDetailsConflictError(null);
-                    }}
+                    disabled={isPending}
+                    onClick={() => reset()}
                   >
                     Reset Changes
                   </Button>
@@ -667,8 +344,8 @@ export default function DocumentDetailPage() {
                 <Button
                   type="submit"
                   variant="primary"
-                  disabled={!isDirty || anyPending}
-                  loading={updateDetailsMutation.isPending}
+                  disabled={!isDirty || isPending}
+                  loading={isPending}
                 >
                   <Save size={14} />
                   Save Changes
@@ -680,18 +357,11 @@ export default function DocumentDetailPage() {
           {/* Reupload file card */}
           <div className="rounded-lg bg-white p-6 shadow-sm">
             {cardHeading('Document File')}
-
-            {/* Current file info */}
             <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 p-4">
               <div className="flex items-center gap-3 min-w-0">
                 <currentFileIcon.Icon size={32} className={`shrink-0 ${currentFileIcon.cls}`} />
                 <div className="min-w-0">
-                  <p
-                    className="truncate text-sm font-medium text-lng-grey"
-                    title={currentFileName}
-                  >
-                    {currentFileName}
-                  </p>
+                  <p className="truncate text-sm font-medium text-lng-grey" title={currentFileName}>{currentFileName}</p>
                   <p className="text-xs text-gray-400">Currently uploaded file</p>
                 </div>
               </div>
@@ -700,26 +370,17 @@ export default function DocumentDetailPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => window.open(doc.document_url!, '_blank', 'noopener,noreferrer')}
-                disabled={anyPending}
-                className='flex w-fit text-nowrap'
+                disabled={isPending}
               >
                 <ExternalLink size={13} />
                 Open Current File
               </Button>
             </div>
 
-            {/* Divider */}
             <div className="my-5 border-t border-gray-200" />
-
-            {/* Replace file section */}
             <div className="space-y-3">
               <p className="text-sm font-medium text-lng-grey">Replace File</p>
-              <p className="text-xs italic text-lng-grey">
-                Uploading a new file will replace the current one. The old file will remain
-                in storage but will no longer be accessible.
-              </p>
-
-              {/* Hidden file input */}
+              <p className="text-xs italic text-lng-grey">Uploading a new file will replace the current one.</p>
               <input
                 ref={reuploadFileInputRef}
                 type="file"
@@ -731,28 +392,17 @@ export default function DocumentDetailPage() {
                   e.target.value = '';
                 }}
               />
-
-              {/* Compact drop zone */}
               {!reuploadFile ? (
                 <div
                   role="button"
                   tabIndex={0}
-                  onClick={() => !anyPending && reuploadFileInputRef.current?.click()}
-                  onKeyDown={(e) => e.key === 'Enter' && !anyPending && reuploadFileInputRef.current?.click()}
+                  onClick={() => !isPending && reuploadFileInputRef.current?.click()}
+                  onKeyDown={(e) => e.key === 'Enter' && !isPending && reuploadFileInputRef.current?.click()}
                   onDragEnter={handleReuploadDragEnter}
                   onDragLeave={handleReuploadDragLeave}
                   onDragOver={handleReuploadDragOver}
-                  onDrop={!anyPending ? handleReuploadDrop : undefined}
-                  className={`
-                    flex items-center justify-center gap-3 rounded-lg border-2 border-dashed
-                    px-4 py-5 text-center transition-all duration-200
-                    ${anyPending
-                      ? 'pointer-events-none cursor-not-allowed opacity-50'
-                      : 'cursor-pointer'}
-                    ${reuploadDragOver
-                      ? 'border-lng-blue bg-lng-blue-20 cursor-copy'
-                      : 'border-lng-blue-40 hover:border-lng-blue hover:bg-lng-blue-20'}
-                  `}
+                  onDrop={handleReuploadDrop}
+                  className={`flex items-center justify-center gap-3 rounded-lg border-2 border-dashed px-4 py-5 text-center transition-all duration-200 ${isPending ? 'pointer-events-none opacity-50' : 'cursor-pointer'} ${reuploadDragOver ? 'border-lng-blue bg-lng-blue-20' : 'border-lng-blue-40 hover:border-lng-blue hover:bg-lng-blue-20'}`}
                 >
                   <Upload size={24} className="shrink-0 text-lng-blue-40" />
                   <div className="text-left">
@@ -762,52 +412,26 @@ export default function DocumentDetailPage() {
                 </div>
               ) : (
                 <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3">
-                  {reuploadFileIcon && (
-                    <reuploadFileIcon.Icon size={28} className={`shrink-0 ${reuploadFileIcon.cls}`} />
-                  )}
+                  {reuploadFileIcon && <reuploadFileIcon.Icon size={28} className={`shrink-0 ${reuploadFileIcon.cls}`} />}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-lng-grey" title={reuploadFile.name}>
-                      {reuploadFile.name}
-                    </p>
+                    <p className="truncate text-sm font-medium text-lng-grey" title={reuploadFile.name}>{reuploadFile.name}</p>
                     <p className="text-xs text-gray-400">{formatFileSize(reuploadFile.size)}</p>
                   </div>
-                  <button
-                    type="button"
-                    title="Remove"
-                    disabled={anyPending}
-                    onClick={() => { setReuploadFile(null); setReuploadFileError(null); }}
-                    className="text-lng-red hover:underline disabled:opacity-40"
-                  >
+                  <button type="button" disabled={isPending} onClick={() => { setReuploadFile(null); setReuploadFileError(null); }} className="text-lng-red hover:underline disabled:opacity-40">
                     <X size={16} />
                   </button>
                 </div>
               )}
-
-              {reuploadFileError && (
-                <p className="text-xs text-lng-red">{reuploadFileError}</p>
-              )}
-
-              {/* Reupload progress bar */}
+              {reuploadFileError && <p className="text-xs text-lng-red">{reuploadFileError}</p>}
               {reuploadProgress !== null && (
                 <div>
                   <p className="mb-1 text-sm text-lng-grey">Uploading… {reuploadProgress}%</p>
                   <div className="h-2 overflow-hidden rounded-full bg-lng-blue-20">
-                    <div
-                      className="h-2 rounded-full bg-lng-blue transition-all duration-300"
-                      style={{ width: `${reuploadProgress}%` }}
-                    />
+                    <div className="h-2 rounded-full bg-lng-blue transition-all duration-300" style={{ width: `${reuploadProgress}%` }} />
                   </div>
                 </div>
               )}
-
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                disabled={!reuploadFile || anyPending}
-                loading={reuploadMutation.isPending}
-                onClick={() => reuploadMutation.mutate()}
-              >
+              <Button type="button" variant="primary" className="w-full justify-center" loading={reuploadMutation.isPending} disabled={!reuploadFile || isPending} onClick={() => reuploadMutation.mutate()}>
                 <Upload size={14} />
                 Upload New Version
               </Button>
@@ -815,121 +439,47 @@ export default function DocumentDetailPage() {
           </div>
         </div>
 
-        {/* ── Right column (1/3) ────────────────────────────────────────── */}
+        {/* ── Right column (1/3) ─────────────────────────────────────────── */}
         <div className="space-y-6">
-
-          {/* Document state card */}
           <div className="rounded-lg bg-white p-6 shadow-sm">
-            {cardHeading('Document State')}
-
-            <div className="space-y-4">
-              <div>{stateBadge}</div>
-              <p className="text-sm text-lng-grey">{stateDescription}</p>
-
-              {doc.state === DocumentState.DRAFT && (
-                <Button
-                  type="button"
-                  variant="primary"
-                  className="w-full"
-                  disabled={anyPending}
-                  loading={statusMutation.isPending}
-                  onClick={() => statusMutation.mutate(DocumentState.PUBLISHED)}
-                >
-                  <Send size={14} />
-                  Publish Document
-                </Button>
-              )}
-
-              {doc.state === DocumentState.PUBLISHED && (
-                <Button
-                  type="button"
-                  variant="danger"
-                  className="w-full"
-                  disabled={anyPending}
-                  loading={statusMutation.isPending}
-                  onClick={() => setShowUnpublishConfirm(true)}
-                >
-                  <EyeOff size={14} />
-                  Unpublish Document
-                </Button>
-              )}
-
-              {doc.state === DocumentState.UNPUBLISHED && (
-                <Button
-                  type="button"
-                  variant="primary"
-                  className="w-full"
-                  disabled={anyPending}
-                  loading={statusMutation.isPending}
-                  onClick={() => statusMutation.mutate(DocumentState.PUBLISHED)}
-                >
-                  <Send size={14} />
-                  Re-publish Document
-                </Button>
-              )}
+            {cardHeading('Visibility & State')}
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-sm font-medium text-lng-grey">Status</span>
+              {stateBadge}
             </div>
+            <p className="mb-5 text-xs text-gray-400 leading-relaxed">{stateDescription}</p>
+            {doc.state === DocumentState.DRAFT ? (
+              <Button type="button" variant="primary" className="w-full justify-center" loading={statusMutation.isPending} disabled={isPending} onClick={() => statusMutation.mutate(DocumentState.PUBLISHED)}>
+                <Send size={14} />
+                Publish Document
+              </Button>
+            ) : doc.state === DocumentState.PUBLISHED ? (
+              <Button type="button" variant="outline" className="w-full justify-center text-lng-red hover:bg-lng-red-20" disabled={isPending} onClick={() => setShowUnpublishConfirm(true)}>
+                <EyeOff size={14} />
+                Unpublish
+              </Button>
+            ) : (
+              <Button type="button" variant="primary" className="w-full justify-center" loading={statusMutation.isPending} disabled={isPending} onClick={() => statusMutation.mutate(DocumentState.PUBLISHED)}>
+                <Send size={14} />
+                Re-publish
+              </Button>
+            )}
           </div>
 
-          {/* Department access card */}
           <div className="rounded-lg bg-white p-6 shadow-sm">
             {cardHeading('Department Access')}
-
-            <div className="space-y-4">
-              {/* Current access badge */}
-              <div>
-                {localAccess === DepartmentAccess.ALL
-                  ? <Badge variant="info">All Departments</Badge>
-                  : <Badge variant="neutral">Restricted</Badge>}
-              </div>
-
-              {/* Restrict Access Toggle */}
-              <Toggle
-                label="Restrict Access"
-                description="Only allow specific departments to view this document."
-                checked={localAccess === DepartmentAccess.RESTRICTED}
-                onChange={(checked) => handleAccessToggle(checked ? DepartmentAccess.RESTRICTED : DepartmentAccess.ALL)}
-                disabled={anyPending}
-              />
-
-              {/* Department checkboxes */}
-              <div
-                style={{
-                  maxHeight:  localAccess === DepartmentAccess.RESTRICTED ? '300px' : '0',
-                  overflow:   'hidden',
-                  transition: 'max-height 0.25s ease',
-                }}
-              >
-                <div className="flex flex-col gap-2 pt-1">
-                  <label className="text-sm font-medium text-lng-grey">
-                    Allowed Departments <span className="text-lng-red">*</span>
-                  </label>
-                  {deptsLoading ? (
-                    <div className="flex items-center gap-2 py-2">
-                      <Spinner size="sm" />
-                      <span className="text-sm text-gray-400">Loading departments…</span>
-                    </div>
-                  ) : departments.length === 0 ? (
-                    <p className="text-sm text-gray-400">No departments available.</p>
-                  ) : (
-                    <div className="max-h-48 overflow-y-auto rounded border border-gray-200">
+            <div className="mb-5 space-y-4">
+              <Toggle label="Restrict Access" description="Limit visibility to specific departments." checked={localAccess === DepartmentAccess.RESTRICTED} onChange={(checked) => handleAccessToggle(checked ? DepartmentAccess.RESTRICTED : DepartmentAccess.ALL)} disabled={isPending} />
+              {localAccess === DepartmentAccess.RESTRICTED && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-lng-grey">Allowed Departments:</p>
+                  {deptsLoading ? <Spinner size="sm" /> : (
+                    <div className="max-h-48 overflow-y-auto rounded border border-gray-200 divide-y divide-gray-100">
                       {departments.map((dept) => {
                         const checked = selectedDeptIds.includes(dept.id);
                         return (
-                          <label
-                            key={dept.id}
-                            className={`
-                              flex cursor-pointer items-center gap-3 px-3 py-2 text-sm
-                              transition-colors select-none
-                              ${checked ? 'bg-lng-blue-20' : 'hover:bg-gray-50'}
-                            `}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              disabled={anyPending}
-                              onChange={() => toggleDeptSelection(dept.id)}
-                              className="h-4 w-4 rounded border-gray-300 text-lng-blue focus:ring-lng-blue"
-                            />
+                          <label key={dept.id} className={`flex cursor-pointer items-center gap-3 px-3 py-2 text-sm transition-colors ${checked ? 'bg-lng-blue-20' : 'hover:bg-gray-50'}`}>
+                            <input type="checkbox" checked={checked} disabled={isPending} onChange={() => toggleDeptSelection(dept.id)} className="h-3.5 w-3.5 rounded border-gray-300 text-lng-blue" />
                             <span className="text-lng-grey">{dept.name}</span>
                           </label>
                         );
@@ -937,13 +487,14 @@ export default function DocumentDetailPage() {
                     </div>
                   )}
                 </div>
-              </div>
+              )}
+            </div>
 
-              <Button
+            <Button
                 type="button"
                 variant="primary"
                 className="w-full"
-                disabled={!deptsDirty || anyPending}
+                disabled={!deptsDirty || isPending}
                 loading={deptsMutation.isPending}
                 onClick={() => deptsMutation.mutate()}
               >
@@ -951,9 +502,8 @@ export default function DocumentDetailPage() {
                 Save Access
               </Button>
             </div>
-          </div>
 
-          {/* Danger zone card */}
+            {/* Danger zone card */}
           <div className="rounded-lg bg-white p-6 shadow-sm border border-lng-red-40">
             {cardHeading('Danger Zone', true)}
 
@@ -965,7 +515,7 @@ export default function DocumentDetailPage() {
                 type="button"
                 variant="danger"
                 className="w-full"
-                disabled={anyPending}
+                disabled={isPending}
                 loading={deleteMutation.isPending}
                 onClick={() => setShowDeleteConfirm(true)}
               >
