@@ -1,11 +1,9 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useWatch } from 'react-hook-form';
 import {
   ArrowLeft,
   AlertCircle,
   Video as VideoIcon,
-  EyeOff,
   Save,
   Trash2,
   Loader2,
@@ -26,6 +24,7 @@ import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import Toggle from '../../../components/ui/Toggle';
 import Input from '../../../components/ui/Input';
 import { useVideoForm } from '../../../hooks/admin/useVideoForm';
+import { useState } from 'react';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -33,14 +32,6 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-GB', {
     day: '2-digit', month: 'short', year: 'numeric',
   });
-}
-
-function getCategoryLabel(video: Video, allCats: Category[]): string {
-  if (!video.category) return 'Uncategorized';
-  const cat = video.category;
-  if (!cat.parent_category_id) return cat.name;
-  const parent = allCats.find((c) => c.id === cat.parent_category_id);
-  return parent ? `${parent.name} > ${cat.name}` : cat.name;
 }
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
@@ -144,8 +135,6 @@ export default function VideoDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm]   = useState(false);
   const [showAllDeptConfirm, setShowAllDeptConfirm] = useState(false);
 
-  // ─── Thumbnail error fallback ──────────────────────────────────────────
-  const [thumbError, setThumbError] = useState(false);
 
   const descValue = useWatch({ control, name: 'description' }) ?? '';
 

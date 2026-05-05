@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 const bar = (cls: string) => (
   <div className={`animate-pulse rounded bg-lng-blue-20 ${cls}`} />
