@@ -1,8 +1,14 @@
 import apiClient from './axios';
-import { type Admin } from '../types';
+import { type Admin, type PaginatedResponse } from '../types';
 
-export const getAdmins = () =>
-  apiClient.get<Admin[]>('/admin').then((r) => r.data);
+export const getAdmins = (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+}) =>
+  apiClient
+    .get<PaginatedResponse<Admin>>('/admin', { params })
+    .then((r) => r.data);
 
 export const getAdmin = (id: string) =>
   apiClient.get<Admin>(`/admin/${id}`).then((r) => r.data);

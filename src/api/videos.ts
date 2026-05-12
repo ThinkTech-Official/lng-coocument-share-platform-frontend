@@ -1,12 +1,22 @@
 import apiClient from './axios';
-import { type Video, type DepartmentAccess, type ListParams } from '../types';
+import { type Video, type DepartmentAccess, type VideoUploadStatus, type PaginatedResponse } from '../types';
 
 interface VideoStreamResponse {
   stream_url: string;
 }
 
-export const getVideos = (params?: ListParams) =>
-  apiClient.get<Video[]>('/videos', { params }).then((r) => r.data);
+export const getVideos = (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  is_live?: boolean;
+  category_id?: string;
+  upload_status?: VideoUploadStatus;
+  department_access?: DepartmentAccess;
+}) =>
+  apiClient
+    .get<PaginatedResponse<Video>>('/videos', { params })
+    .then((r) => r.data);
 
 export const getVideo = (id: string) =>
   apiClient.get<Video>(`/videos/${id}`).then((r) => r.data);

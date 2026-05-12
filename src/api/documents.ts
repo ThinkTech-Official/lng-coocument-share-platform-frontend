@@ -1,8 +1,17 @@
 import apiClient from './axios';
-import { type Document, type DocumentState, type DepartmentAccess, type ListParams } from '../types';
+import { type Document, type DocumentState, type DepartmentAccess, type PaginatedResponse } from '../types';
 
-export const getDocuments = (params?: ListParams) =>
-  apiClient.get<Document[]>('/documents', { params }).then((r) => r.data);
+export const getDocuments = (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  state?: DocumentState;
+  category_id?: string;
+  department_access?: DepartmentAccess;
+}) =>
+  apiClient
+    .get<PaginatedResponse<Document>>('/documents', { params })
+    .then((r) => r.data);
 
 export const getDocument = (id: string) =>
   apiClient.get<Document>(`/documents/${id}`).then((r) => r.data);

@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
   Plus, Search, Pencil, Trash2, Building2, AlertCircle, AlertTriangle,
 } from 'lucide-react';
@@ -12,6 +12,7 @@ import Button from '../../../components/ui/Button';
 import EmptyState from '../../../components/ui/EmptyState';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import Modal from '../../../components/ui/Modal';
+import Pagination from '../../../components/ui/Pagination';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -63,22 +64,15 @@ interface DeptCardProps {
 function DeptCard({ dept, onEdit, onDelete, deleting }: DeptCardProps) {
   return (
     <div className="flex flex-col rounded-lg border-l-4 border-lng-blue bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
-      {/* Name */}
       <h3 className="mb-1 line-clamp-2 text-base font-bold text-lng-grey break-word">
         {dept.name}
       </h3>
-
-      {/* Description */}
       <p className={`mb-4 line-clamp-2 text-sm ${dept.description ? 'italic text-lng-grey' : 'text-lng-grey opacity-50'}`}>
         {dept.description || 'No description'}
       </p>
-
-      {/* Created date */}
       <p className="mb-3 mt-auto text-xs text-lng-grey">
         Created {formatDate(dept.created_at)}
       </p>
-
-      {/* Actions */}
       <div className="flex gap-2">
         <Button variant="outline" size="sm" onClick={onEdit} disabled={deleting}>
           <Pencil size={13} />
@@ -129,28 +123,36 @@ export default function DepartmentsListPage() {
   const navigate    = useNavigate();
   const queryClient = useQueryClient();
 
-  const [search, setSearch]           = useState('');
-  const [debouncedSearch, setDebounced] = useState('');
-  const [deleteTarget, setDeleteTarget] = useState<Department | null>(null);
-  const [conflicts, setConflicts]       = useState<string[] | null>(null);
+  const [page, setPage]                     = useState(1);
+  const [search, setSearch]                 = useState('');
+  const [debouncedSearch, setDebounced]     = useState('');
+  const [deleteTarget, setDeleteTarget]     = useState<Department | null>(null);
+  const [conflicts, setConflicts]           = useState<string[] | null>(null);
 
   useEffect(() => {
     document.title = 'Departments — LNG Canada';
     return () => { document.title = 'LNG Canada'; };
   }, []);
 
-  // Debounce search 300 ms
+  // Debounce search 300 ms; reset page
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(search), 300);
+    const t = setTimeout(() => {
+      setDebounced(search);
+      setPage(1);
+    }, 300);
     return () => clearTimeout(t);
   }, [search]);
 
   // ─── Query ────────────────────────────────────────────────────────────────────
 
-  const { data: departments, isLoading, isError, refetch } = useQuery({
-    queryKey: ['departments'],
-    queryFn:  getDepartments,
+  const { data, isLoading, isFetching, isError, refetch } = useQuery({
+    queryKey: ['departments', { page, search: debouncedSearch }],
+    queryFn:  () => getDepartments({ page, limit: 20, search: debouncedSearch || undefined }),
+    placeholderData: keepPreviousData,
   });
+
+  const departments = data?.data ?? [];
+  const meta        = data?.meta;
 
   // ─── Delete mutation ──────────────────────────────────────────────────────────
 
@@ -173,18 +175,7 @@ export default function DepartmentsListPage() {
     },
   });
 
-  // ─── Client-side filtering ────────────────────────────────────────────────────
-
-  const filtered = useMemo(() => {
-    if (!departments) return [];
-    const q = debouncedSearch.toLowerCase().trim();
-    if (!q) return departments;
-    return departments.filter(
-      (d) =>
-        d.name.toLowerCase().includes(q) ||
-        d.description?.toLowerCase().includes(q)
-    );
-  }, [departments, debouncedSearch]);
+  const hasSearch = !!debouncedSearch;
 
   // ─── Render ───────────────────────────────────────────────────────────────────
 
@@ -233,7 +224,7 @@ export default function DepartmentsListPage() {
       )}
 
       {/* Empty — no departments at all */}
-      {!isLoading && !isError && departments?.length === 0 && (
+      {!isLoading && !isError && meta?.total === 0 && !hasSearch && (
         <div>
           <EmptyState
             icon={Building2}
@@ -250,7 +241,7 @@ export default function DepartmentsListPage() {
       )}
 
       {/* Empty — search returned nothing */}
-      {!isLoading && !isError && departments && departments.length > 0 && filtered.length === 0 && (
+      {!isLoading && !isError && departments.length === 0 && hasSearch && (
         <EmptyState
           icon={Building2}
           title="No departments found"
@@ -259,18 +250,29 @@ export default function DepartmentsListPage() {
       )}
 
       {/* Department cards */}
-      {!isLoading && !isError && filtered.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((dept) => (
-            <DeptCard
-              key={dept.id}
-              dept={dept}
-              onEdit={() => navigate(`/admin/departments/${dept.id}`)}
-              onDelete={() => setDeleteTarget(dept)}
-              deleting={deleteMutation.isPending && deleteTarget?.id === dept.id}
-            />
-          ))}
-        </div>
+      {!isLoading && !isError && departments.length > 0 && (
+        <>
+          <div
+            className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 transition-opacity duration-200 ${isFetching ? 'opacity-60' : 'opacity-100'}`}
+          >
+            {departments.map((dept) => (
+              <DeptCard
+                key={dept.id}
+                dept={dept}
+                onEdit={() => navigate(`/admin/departments/${dept.id}`)}
+                onDelete={() => setDeleteTarget(dept)}
+                deleting={deleteMutation.isPending && deleteTarget?.id === dept.id}
+              />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {meta && (
+            <div className="mt-6">
+              <Pagination meta={meta} onPageChange={setPage} isLoading={isFetching} />
+            </div>
+          )}
+        </>
       )}
 
       {/* Delete confirm dialog */}

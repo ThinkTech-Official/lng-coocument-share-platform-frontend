@@ -6,6 +6,7 @@ import { useCategoryTree } from '../../../hooks/admin/useCategoryTree';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import EmptyState from '../../../components/ui/EmptyState';
+import Pagination from '../../../components/ui/Pagination';
 
 import CategoryCard from './components/CategoryCard';
 import CategorySearch from './components/CategorySearch';
@@ -23,6 +24,8 @@ export default function CategoriesListPage() {
     refetch,
     data,
     filtered,
+    meta,
+    setPage,
     toggleExpand,
     isExpanded,
     deleteTarget,
@@ -67,7 +70,7 @@ export default function CategoriesListPage() {
       )}
 
       {/* Empty — no categories exist */}
-      {!isLoading && !isError && data?.length === 0 && (
+      {!isLoading && !isError && data.length === 0 && !debouncedSearch && (
         <div>
           <EmptyState
             icon={LayoutGrid}
@@ -84,7 +87,7 @@ export default function CategoriesListPage() {
       )}
 
       {/* Empty — search returned nothing */}
-      {!isLoading && !isError && data && data.length > 0 && filtered.length === 0 && (
+      {!isLoading && !isError && data.length === 0 && !!debouncedSearch && (
         <EmptyState
           icon={LayoutGrid}
           title="No categories found"
@@ -143,6 +146,13 @@ export default function CategoriesListPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!isLoading && !isError && meta && meta.total > 0 && (
+        <div className="mt-6">
+          <Pagination meta={meta} onPageChange={setPage} />
         </div>
       )}
 

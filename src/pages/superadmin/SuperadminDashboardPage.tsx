@@ -99,13 +99,13 @@ export default function SuperadminDashboardPage() {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // ─── Queries (independent per card) ────────────────────────────────────────
+  // ─── Queries (limit=1; use meta.total for the count) ────────────────────────
 
-  const admins      = useQuery({ queryKey: ['admins'],      queryFn: getAdmins });
-  const contractors = useQuery({ queryKey: ['contractors'], queryFn: getContractors });
-  const departments = useQuery({ queryKey: ['departments'], queryFn: getDepartments });
-  const documents   = useQuery({ queryKey: ['documents'],   queryFn: () => getDocuments() });
-  const videos      = useQuery({ queryKey: ['videos'],      queryFn: () => getVideos() });
+  const admins      = useQuery({ queryKey: ['admins-count'],      queryFn: () => getAdmins({ page: 1, limit: 1 }) });
+  const contractors = useQuery({ queryKey: ['contractors-count'], queryFn: () => getContractors({ page: 1, limit: 1 }) });
+  const departments = useQuery({ queryKey: ['departments-count'], queryFn: () => getDepartments({ page: 1, limit: 1 }) });
+  const documents   = useQuery({ queryKey: ['documents-count'],   queryFn: () => getDocuments({ page: 1, limit: 1 }) });
+  const videos      = useQuery({ queryKey: ['videos-count'],      queryFn: () => getVideos({ page: 1, limit: 1 }) });
 
   // ─── Render ─────────────────────────────────────────────────────────────────
 
@@ -125,35 +125,35 @@ export default function SuperadminDashboardPage() {
         <StatCard
           label="Total Admins"
           icon={Users}
-          count={admins.data?.length}
+          count={admins.data?.meta?.total}
           isLoading={admins.isLoading}
           isError={admins.isError}
         />
         <StatCard
           label="Total Contractors"
           icon={HardHat}
-          count={contractors.data?.length}
+          count={contractors.data?.meta?.total}
           isLoading={contractors.isLoading}
           isError={contractors.isError}
         />
         <StatCard
           label="Total Departments"
           icon={Building2}
-          count={departments.data?.length}
+          count={departments.data?.meta?.total}
           isLoading={departments.isLoading}
           isError={departments.isError}
         />
         <StatCard
           label="Total Documents"
           icon={FileText}
-          count={documents.data?.length}
+          count={documents.data?.meta?.total}
           isLoading={documents.isLoading}
           isError={documents.isError}
         />
         <StatCard
           label="Total Videos"
           icon={Video}
-          count={videos.data?.length}
+          count={videos.data?.meta?.total}
           isLoading={videos.isLoading}
           isError={videos.isError}
         />

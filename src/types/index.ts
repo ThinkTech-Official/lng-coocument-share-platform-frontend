@@ -128,12 +128,18 @@ export interface Log {
 
 // ─── API utility types ────────────────────────────────────────────────────────
 
-export interface PaginatedResponse<T> {
-  data: T[];
+export interface PaginatedMeta {
   total: number;
   page: number;
   limit: number;
-  cursor?: string;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: PaginatedMeta;
 }
 
 export interface LogsPage {

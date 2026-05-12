@@ -46,10 +46,11 @@ export function useContractorForm(id?: string) {
     enabled: isEdit,
   });
 
-  const { data: departments, isLoading: deptsLoading } = useQuery({
-    queryKey: ['departments'],
-    queryFn: getDepartments,
+  const { data: deptsResponse, isLoading: deptsLoading } = useQuery({
+    queryKey: ['departments-all'],
+    queryFn: () => getDepartments({ limit: 100 }),
   });
+  const departments = deptsResponse?.data ?? [];
 
   // ─── Form ─────────────────────────────────────────────────────────────────
 

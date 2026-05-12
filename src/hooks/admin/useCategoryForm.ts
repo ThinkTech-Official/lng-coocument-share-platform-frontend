@@ -4,7 +4,7 @@ import { useForm, useController } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { getCategory, getCategories, createCategory, updateCategory } from '../../api/categories';
+import { getCategory, getCategoriesPublic, createCategory, updateCategory } from '../../api/categories';
 import { categorySchema } from '../../constants/schemas';
 import { type CategoryFormValues } from '../../constants/types';
 
@@ -35,8 +35,8 @@ export function useCategoryForm(id?: string) {
   });
 
   const { data: allCategories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: getCategories,
+    queryKey: ['categories-public'],
+    queryFn: getCategoriesPublic,
   });
 
   // Root categories only for parent dropdown; exclude self in edit mode

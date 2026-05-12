@@ -12,12 +12,13 @@ import { type Document, type Category, type DocumentState } from '../../../types
 import {
   getDocuments, updateDocumentStatus, deleteDocument,
 } from '../../../api/documents';
-import { getCategories } from '../../../api/categories';
+import { getCategoriesPublic } from '../../../api/categories';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import Badge from '../../../components/ui/Badge';
 import EmptyState from '../../../components/ui/EmptyState';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import Pagination from '../../../components/ui/Pagination';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -84,8 +85,9 @@ export default function DocumentsListPage() {
   const searchQuery    = searchParams.get('search') ?? '';
 
   const [searchInput, setSearchInput] = useState(() => searchQuery);
+  const [page, setPage]               = useState(1);
 
-  // Debounce search → URL
+  // Debounce search → URL; reset page
   useEffect(() => {
     const t = setTimeout(() => {
       setSearchParams(
@@ -97,11 +99,13 @@ export default function DocumentsListPage() {
         },
         { replace: true },
       );
+      setPage(1);
     }, 300);
     return () => clearTimeout(t);
   }, [searchInput, setSearchParams]);
 
-  const setFilter = (key: string, value: string) =>
+  const setFilter = (key: string, value: string) => {
+    setPage(1);
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
@@ -111,9 +115,11 @@ export default function DocumentsListPage() {
       },
       { replace: true },
     );
+  };
 
   const clearFilters = () => {
     setSearchInput('');
+    setPage(1);
     setSearchParams({}, { replace: true });
   };
 
@@ -138,25 +144,31 @@ export default function DocumentsListPage() {
   // ─── Queries ──────────────────────────────────────────────────────────────
 
   const {
-    data: documents,
+    data: docResponse,
     isLoading,
     isFetching,
     isError,
     refetch,
   } = useQuery({
-    queryKey: ['documents', { search: searchQuery, state: stateFilter, category_id: categoryFilter }],
+    queryKey: ['documents', { page, search: searchQuery, state: stateFilter, category_id: categoryFilter, access: accessFilter }],
     queryFn: () =>
       getDocuments({
-        ...(searchQuery    && { search: searchQuery }),
-        ...(stateFilter    && { state: stateFilter }),
-        ...(categoryFilter && { category_id: categoryFilter }),
-      } as Parameters<typeof getDocuments>[0]),
+        page,
+        limit: 20,
+        search: searchQuery || undefined,
+        state: (stateFilter as DocumentState) || undefined,
+        category_id: categoryFilter || undefined,
+        department_access: (accessFilter as 'ALL' | 'RESTRICTED') || undefined,
+      }),
     placeholderData: keepPreviousData,
   });
 
+  const documents = docResponse?.data ?? [];
+  const docMeta   = docResponse?.meta;
+
   const { data: allCategories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn:  getCategories,
+    queryKey: ['categories-public'],
+    queryFn:  getCategoriesPublic,
   });
 
   // Root categories for the filter dropdown
@@ -167,13 +179,7 @@ export default function DocumentsListPage() {
     [allCategories],
   );
 
-  // ─── Client-side access filter ────────────────────────────────────────────
-
-  const filteredDocuments = useMemo(() => {
-    if (!documents) return [];
-    if (!accessFilter) return documents;
-    return documents.filter((d) => d.access_type === accessFilter);
-  }, [documents, accessFilter]);
+  const filteredDocuments = documents;
 
   // ─── Selection helpers ────────────────────────────────────────────────────
 
@@ -472,7 +478,7 @@ export default function DocumentsListPage() {
             <tbody>
               <tr>
                 <td colSpan={7}>
-                  {!documents || documents.length === 0 ? (
+                  {docMeta?.total === 0 && !hasFilters ? (
                     <div>
                       <EmptyState
                         icon={FileText}
@@ -618,6 +624,11 @@ export default function DocumentsListPage() {
             </tbody>
           )}
         </table>
+
+        {/* Pagination */}
+        {!isLoading && !isError && docMeta && docMeta.total > 0 && (
+          <Pagination meta={docMeta} onPageChange={setPage} isLoading={isFetching} />
+        )}
       </div>
 
       {/* ── Unpublish confirm ──────────────────────────────────────────────── */}

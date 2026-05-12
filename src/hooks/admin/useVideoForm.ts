@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { type Video, VideoState, VideoUploadStatus, DepartmentAccess } from '../../types';
-import { getCategories } from '../../api/categories';
+import { getCategoriesPublic } from '../../api/categories';
 import { getDepartments } from '../../api/departments';
 import { getVideo, updateVideo, updateVideoStatus, deleteVideo } from '../../api/videos';
 import apiClient from '../../api/axios';
@@ -52,14 +52,15 @@ export function useVideoForm(id?: string) {
   });
 
   const { data: allCategories = [], isLoading: catsLoading } = useQuery({
-    queryKey: ['categories'],
-    queryFn: getCategories,
+    queryKey: ['categories-public'],
+    queryFn: getCategoriesPublic,
   });
 
-  const { data: departments = [], isLoading: deptsLoading } = useQuery({
-    queryKey: ['departments'],
-    queryFn: getDepartments,
+  const { data: deptsResponse, isLoading: deptsLoading } = useQuery({
+    queryKey: ['departments-all'],
+    queryFn: () => getDepartments({ limit: 100 }),
   });
+  const departments = deptsResponse?.data ?? [];
 
   const rootCategories = allCategories
     .filter((c) => c.parent_category_id === null)

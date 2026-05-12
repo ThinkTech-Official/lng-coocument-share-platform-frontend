@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
   HardHat,
   UserPlus,
@@ -20,6 +20,7 @@ import EmptyState from '../../../components/ui/EmptyState';
 import Modal from '../../../components/ui/Modal';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import Toggle from '../../../components/ui/Toggle';
+import Pagination from '../../../components/ui/Pagination';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -29,7 +30,7 @@ function formatDate(iso: string): string {
   });
 }
 
-// ─── Action dialog (supports primary + danger confirm variants) ───────────────
+// ─── Action dialog ────────────────────────────────────────────────────────────
 
 interface ActionDialogProps {
   open: boolean;
@@ -123,6 +124,7 @@ export default function ContractorsListPage() {
   const navigate    = useNavigate();
   const queryClient = useQueryClient();
 
+  const [page, setPage]                       = useState(1);
   const [search, setSearch]                   = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter]       = useState<StatusFilter>('all');
@@ -140,23 +142,40 @@ export default function ContractorsListPage() {
     return () => { document.title = 'LNG Canada'; };
   }, []);
 
-  // Debounce search 300 ms
+  // Debounce search 300 ms; reset page
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
     return () => clearTimeout(t);
   }, [search]);
 
+  // Reset page when filters change
+  useEffect(() => { setPage(1); }, [statusFilter, deptFilter]);
+
   // ─── Queries ────────────────────────────────────────────────────────────────
 
-  const { data: contractors, isLoading, isError, refetch } = useQuery({
-    queryKey: ['contractors'],
-    queryFn:  getContractors,
+  const { data, isLoading, isFetching, isError, refetch } = useQuery({
+    queryKey: ['contractors', { page, search: debouncedSearch, statusFilter, deptFilter }],
+    queryFn:  () => getContractors({
+      page,
+      limit: 20,
+      search: debouncedSearch || undefined,
+      is_active: statusFilter === 'all' ? undefined : statusFilter === 'active',
+      department_id: deptFilter || undefined,
+    }),
+    placeholderData: keepPreviousData,
   });
 
-  const { data: departments } = useQuery({
-    queryKey: ['departments'],
-    queryFn:  getDepartments,
+  const contractors = data?.data ?? [];
+  const meta        = data?.meta;
+
+  const { data: deptsResponse } = useQuery({
+    queryKey: ['departments-all'],
+    queryFn:  () => getDepartments({ limit: 100 }),
   });
+  const allDepartments = deptsResponse?.data ?? [];
 
   // ─── Mutations ──────────────────────────────────────────────────────────────
 
@@ -181,24 +200,6 @@ export default function ContractorsListPage() {
     },
     onError: () => toast.error('Something went wrong. Please try again.'),
   });
-
-  // ─── Client-side filtering ───────────────────────────────────────────────────
-
-  const filtered = useMemo(() => {
-    if (!contractors) return [];
-    const q = debouncedSearch.toLowerCase();
-    return contractors.filter((c) => {
-      const matchesSearch =
-        !q || c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q);
-      const matchesStatus =
-        statusFilter === 'all' ||
-        (statusFilter === 'active'   && c.is_active)  ||
-        (statusFilter === 'inactive' && !c.is_active);
-      const matchesDept =
-        !deptFilter || c.departments.some((d) => d.id === deptFilter);
-      return matchesSearch && matchesStatus && matchesDept;
-    });
-  }, [contractors, debouncedSearch, statusFilter, deptFilter]);
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
 
@@ -226,6 +227,8 @@ export default function ContractorsListPage() {
     if (!deleteDialog.contractor) return;
     deleteMutation.mutate(deleteDialog.contractor.id);
   }
+
+  const hasFilters = !!(debouncedSearch || statusFilter !== 'all' || deptFilter);
 
   const selectCls = 'rounded border border-gray-300 px-3 py-2 text-sm text-lng-grey focus:border-lng-blue focus:outline-none focus:ring-1 focus:ring-lng-blue';
 
@@ -274,7 +277,7 @@ export default function ContractorsListPage() {
           className={selectCls}
         >
           <option value="">All Departments</option>
-          {departments?.map((d) => (
+          {allDepartments.map((d) => (
             <option key={d.id} value={d.id}>{d.name}</option>
           ))}
         </select>
@@ -282,6 +285,12 @@ export default function ContractorsListPage() {
 
       {/* Table card */}
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+
+        {/* Subtle progress bar while paginating */}
+        <div className={`h-0.5 w-full overflow-hidden transition-opacity duration-200 ${isFetching && !isLoading ? 'opacity-100' : 'opacity-0'}`}>
+          <div className="h-full w-full animate-pulse bg-lng-blue" />
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -319,7 +328,7 @@ export default function ContractorsListPage() {
               )}
 
               {/* Empty — no contractors exist */}
-              {!isLoading && !isError && contractors?.length === 0 && (
+              {!isLoading && !isError && meta?.total === 0 && !hasFilters && (
                 <tr>
                   <td colSpan={6}>
                     <EmptyState
@@ -341,8 +350,8 @@ export default function ContractorsListPage() {
                 </tr>
               )}
 
-              {/* Empty — search/filter returned nothing */}
-              {!isLoading && !isError && contractors && contractors.length > 0 && filtered.length === 0 && (
+              {/* Empty — filters returned nothing */}
+              {!isLoading && !isError && contractors.length === 0 && hasFilters && (
                 <tr>
                   <td colSpan={6}>
                     <EmptyState
@@ -355,7 +364,7 @@ export default function ContractorsListPage() {
               )}
 
               {/* Data rows */}
-              {!isLoading && !isError && filtered.map((contractor) => (
+              {!isLoading && !isError && contractors.map((contractor) => (
                 <tr
                   key={contractor.id}
                   className="transition-colors hover:bg-lng-blue-20"
@@ -408,6 +417,11 @@ export default function ContractorsListPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {!isLoading && !isError && meta && meta.total > 0 && (
+          <Pagination meta={meta} onPageChange={setPage} isLoading={isFetching} />
+        )}
       </div>
 
       {/* ── Status dialog ── */}

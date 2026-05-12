@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { type Document, DocumentState, DepartmentAccess } from '../../types';
-import { getCategories } from '../../api/categories';
+import { getCategoriesPublic } from '../../api/categories';
 import { getDepartments } from '../../api/departments';
 import { getDocument, updateDocument, updateDocumentStatus, deleteDocument } from '../../api/documents';
 import apiClient from '../../api/axios';
@@ -43,14 +43,15 @@ export function useDocumentForm(id?: string) {
   });
 
   const { data: allCategories = [], isLoading: catsLoading } = useQuery({
-    queryKey: ['categories'],
-    queryFn: getCategories,
+    queryKey: ['categories-public'],
+    queryFn: getCategoriesPublic,
   });
 
-  const { data: departments = [], isLoading: deptsLoading } = useQuery({
-    queryKey: ['departments'],
-    queryFn: getDepartments,
+  const { data: deptsResponse, isLoading: deptsLoading } = useQuery({
+    queryKey: ['departments-all'],
+    queryFn: () => getDepartments({ limit: 100 }),
   });
+  const departments = deptsResponse?.data ?? [];
 
   const rootCategories = allCategories
     .filter((c) => c.parent_category_id === null)

@@ -1,8 +1,14 @@
 import apiClient from './axios';
-import { type Category } from '../types';
+import { type Category, type PaginatedResponse } from '../types';
 
-export const getCategories = () =>
-  apiClient.get<Category[]>('/categories').then((r) => r.data);
+export const getCategories = (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+}) =>
+  apiClient
+    .get<PaginatedResponse<Category>>('/categories', { params })
+    .then((r) => r.data);
 
 export const getCategoriesPublic = () =>
   apiClient.get<Category[]>('/categories/public').then((r) => r.data);

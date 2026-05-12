@@ -1,8 +1,14 @@
 import apiClient from './axios';
-import { type Department } from '../types';
+import { type Department, type PaginatedResponse } from '../types';
 
-export const getDepartments = () =>
-  apiClient.get<Department[]>('/departments').then((r) => r.data);
+export const getDepartments = (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+}) =>
+  apiClient
+    .get<PaginatedResponse<Department>>('/departments', { params })
+    .then((r) => r.data);
 
 export const getDepartment = (id: string) =>
   apiClient.get<Department>(`/departments/${id}`).then((r) => r.data);

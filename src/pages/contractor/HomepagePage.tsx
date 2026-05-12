@@ -217,22 +217,25 @@ export default function HomepagePage() {
 
   // Queries
   const {
-    data: documents = [],
+    data: docsResponse,
     isLoading: docsLoading,
     isError: docsError,
   } = useQuery({
     queryKey: ['contractor-documents'],
-    queryFn: () => getDocuments(),
+    queryFn: () => getDocuments({ limit: 100 }),
   });
 
   const {
-    data: videos = [],
+    data: vidsResponse,
     isLoading: vidsLoading,
     isError: vidsError,
   } = useQuery({
     queryKey: ['contractor-videos'],
-    queryFn: () => getVideos(),
+    queryFn: () => getVideos({ limit: 100 }),
   });
+
+  const documents = docsResponse?.data ?? [];
+  const videos    = vidsResponse?.data ?? [];
 
   // Client-side search filtering
   const filteredDocs = useMemo(() => {

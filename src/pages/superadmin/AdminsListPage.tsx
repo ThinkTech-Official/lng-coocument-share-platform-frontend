@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
   Users,
   UserPlus,
@@ -18,6 +18,7 @@ import Button from '../../components/ui/Button';
 import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import Toggle from '../../components/ui/Toggle';
+import Pagination from '../../components/ui/Pagination';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -29,7 +30,7 @@ function formatDate(iso: string): string {
   });
 }
 
-// ─── Action dialog (supports primary + danger confirm variants) ───────────────
+// ─── Action dialog ────────────────────────────────────────────────────────────
 
 interface ActionDialogProps {
   open: boolean;
@@ -119,9 +120,10 @@ export default function AdminsListPage() {
   const navigate     = useNavigate();
   const queryClient  = useQueryClient();
 
-  const [search, setSearch]           = useState('');
+  const [page, setPage]                       = useState(1);
+  const [search, setSearch]                   = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [statusFilter, setStatusFilter]       = useState<StatusFilter>('all');
 
   const [statusDialog, setStatusDialog] = useState<StatusDialogState>({
     open: false, admin: null, action: 'activate',
@@ -135,18 +137,25 @@ export default function AdminsListPage() {
     return () => { document.title = 'LNG Canada'; };
   }, []);
 
-  // Debounce search input 300 ms
+  // Debounce search input 300 ms; reset page
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
     return () => clearTimeout(t);
   }, [search]);
 
   // ─── Query ──────────────────────────────────────────────────────────────────
 
-  const { data: admins, isLoading, isError, refetch } = useQuery({
-    queryKey: ['admins'],
-    queryFn: getAdmins,
+  const { data, isLoading, isFetching, isError, refetch } = useQuery({
+    queryKey: ['admins', { page, search: debouncedSearch }],
+    queryFn:  () => getAdmins({ page, limit: 20, search: debouncedSearch || undefined }),
+    placeholderData: keepPreviousData,
   });
+
+  const admins = data?.data ?? [];
+  const meta   = data?.meta;
 
   // ─── Mutations ──────────────────────────────────────────────────────────────
 
@@ -172,22 +181,13 @@ export default function AdminsListPage() {
     onError: () => toast.error('Something went wrong. Please try again.'),
   });
 
-  // ─── Filtered list ──────────────────────────────────────────────────────────
-
+  // Status filter is client-side (API doesn't support is_active for admins)
   const filtered = useMemo(() => {
-    if (!admins) return [];
-    const q = debouncedSearch.toLowerCase();
-    return admins.filter((a) => {
-      const matchesSearch =
-        !q || a.name.toLowerCase().includes(q) || a.email.toLowerCase().includes(q);
-      const matchesStatus =
-        statusFilter === 'all' ||
-        (statusFilter === 'active' && a.is_active) ||
-        (statusFilter === 'inactive' && !a.is_active);
-      return matchesSearch && matchesStatus;
-    });
-  }, [admins, debouncedSearch, statusFilter]);
-
+    if (statusFilter === 'all') return admins;
+    return admins.filter((a) =>
+      statusFilter === 'active' ? a.is_active : !a.is_active,
+    );
+  }, [admins, statusFilter]);
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
 
@@ -215,6 +215,8 @@ export default function AdminsListPage() {
     if (!deleteDialog.admin) return;
     deleteMutation.mutate(deleteDialog.admin.id);
   }
+
+  const hasFilters = !!(debouncedSearch || statusFilter !== 'all');
 
   // ─── Render ─────────────────────────────────────────────────────────────────
 
@@ -251,7 +253,7 @@ export default function AdminsListPage() {
         </div>
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+          onChange={(e) => { setStatusFilter(e.target.value as StatusFilter); }}
           className="rounded border border-gray-300 px-3 py-2 text-sm text-lng-grey focus:border-lng-blue focus:outline-none focus:ring-1 focus:ring-lng-blue"
         >
           <option value="all">All</option>
@@ -262,6 +264,12 @@ export default function AdminsListPage() {
 
       {/* Table card */}
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+
+        {/* Subtle progress bar while paginating */}
+        <div className={`h-0.5 w-full overflow-hidden transition-opacity duration-200 ${isFetching && !isLoading ? 'opacity-100' : 'opacity-0'}`}>
+          <div className="h-full w-full animate-pulse bg-lng-blue" />
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -297,8 +305,8 @@ export default function AdminsListPage() {
                 </tr>
               )}
 
-              {/* Empty — no admins exist */}
-              {!isLoading && !isError && admins?.length === 0 && (
+              {/* Empty — no admins exist at all */}
+              {!isLoading && !isError && meta?.total === 0 && !hasFilters && (
                 <tr>
                   <td colSpan={5}>
                     <EmptyState
@@ -321,13 +329,13 @@ export default function AdminsListPage() {
               )}
 
               {/* Empty — search/filter returned nothing */}
-              {!isLoading && !isError && admins && admins.length > 0 && filtered.length === 0 && (
+              {!isLoading && !isError && filtered.length === 0 && hasFilters && (
                 <tr>
                   <td colSpan={5}>
                     <EmptyState
                       icon={Users}
                       title="No admins found"
-                      message="Try a different search term."
+                      message="Try a different search term or filter."
                     />
                   </td>
                 </tr>
@@ -383,6 +391,11 @@ export default function AdminsListPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {!isLoading && !isError && meta && meta.total > 0 && (
+          <Pagination meta={meta} onPageChange={setPage} isLoading={isFetching} />
+        )}
       </div>
 
       {/* ── Status dialog ── */}

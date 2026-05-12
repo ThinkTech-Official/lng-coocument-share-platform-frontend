@@ -1,8 +1,16 @@
 import apiClient from './axios';
-import { type Contractor } from '../types';
+import { type Contractor, type PaginatedResponse } from '../types';
 
-export const getContractors = () =>
-  apiClient.get<Contractor[]>('/contractors').then((r) => r.data);
+export const getContractors = (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  is_active?: boolean;
+  department_id?: string;
+}) =>
+  apiClient
+    .get<PaginatedResponse<Contractor>>('/contractors', { params })
+    .then((r) => r.data);
 
 export const getContractor = (id: string) =>
   apiClient.get<Contractor>(`/contractors/${id}`).then((r) => r.data);

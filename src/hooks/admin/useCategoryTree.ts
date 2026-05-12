@@ -17,28 +17,36 @@ export function useCategoryTree() {
 
   const [search, setSearch]             = useState('');
   const [debouncedSearch, setDebounced] = useState('');
+  const [page, setPage]                 = useState(1);
   const [expandedIds, setExpandedIds]   = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
-  // Debounce search 300 ms
+  // Debounce search 300 ms; reset page on search change
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(search), 300);
+    const t = setTimeout(() => {
+      setDebounced(search);
+      setPage(1);
+    }, 300);
     return () => clearTimeout(t);
   }, [search]);
 
   // ─── Query ──────────────────────────────────────────────────────────────────
 
-  const { data, isLoading, isError, refetch } = useQuery<Category[]>({
-    queryKey: ['categories'],
-    queryFn:  getCategories,
+  const { data: rawData, isLoading, isError, refetch } = useQuery({
+    queryKey: ['categories', { page, search: debouncedSearch }],
+    queryFn:  () => getCategories({ page, limit: 20, search: debouncedSearch || undefined }),
   });
 
-  // All categories start expanded; reset whenever data arrives / is refetched
+  const categories = rawData?.data ?? [];
+  const meta       = rawData?.meta;
+
+  // All categories start expanded; reset whenever page data changes
   useEffect(() => {
-    if (data) {
-      setExpandedIds(new Set(data.map((c) => c.id)));
+    if (categories.length) {
+      setExpandedIds(new Set(categories.map((c) => c.id)));
     }
-  }, [data]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawData]);
 
   // ─── Delete mutation ────────────────────────────────────────────────────────
 
@@ -58,8 +66,7 @@ export function useCategoryTree() {
   // ─── Derived data ───────────────────────────────────────────────────────────
 
   const sortedData = useMemo<SortedCategory[]>(() => {
-    if (!data) return [];
-    return [...data]
+    return [...categories]
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((cat) => ({
         ...cat,
@@ -67,18 +74,12 @@ export function useCategoryTree() {
           (a, b) => a.sort_order - b.sort_order,
         ),
       }));
-  }, [data]);
+  }, [categories]);
 
   const q = debouncedSearch.toLowerCase().trim();
 
-  const filtered = useMemo<SortedCategory[]>(() => {
-    if (!q) return sortedData;
-    return sortedData.filter((cat) => {
-      const nameMatch = cat.name.toLowerCase().includes(q);
-      const subMatch  = cat.subcategories.some((s) => s.name.toLowerCase().includes(q));
-      return nameMatch || subMatch;
-    });
-  }, [sortedData, q]);
+  // Search is server-side — filtered is just the sorted current page
+  const filtered = useMemo<SortedCategory[]>(() => sortedData, [sortedData]);
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -99,8 +100,11 @@ export function useCategoryTree() {
     isLoading,
     isError,
     refetch,
-    data,
+    data: categories,
     filtered,
+    meta,
+    page,
+    setPage,
     toggleExpand,
     isExpanded,
     deleteTarget,

@@ -8,15 +8,16 @@ import {
   AlertCircle, Video as VideoIcon, X, Radio, Loader2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { type Video, type Category, VideoUploadStatus } from '../../../types';
+import { type Video, type Category, VideoUploadStatus, type PaginatedResponse } from '../../../types';
 import { getVideos, updateVideoStatus, deleteVideo } from '../../../api/videos';
-import { getCategories } from '../../../api/categories';
+import { getCategoriesPublic } from '../../../api/categories';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import Badge from '../../../components/ui/Badge';
 import EmptyState from '../../../components/ui/EmptyState';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import Toggle from '../../../components/ui/Toggle';
+import Pagination from '../../../components/ui/Pagination';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -250,8 +251,9 @@ export default function VideosListPage() {
   const accessFilter       = searchParams.get('access') ?? '';
 
   const [searchInput, setSearchInput] = useState(() => searchQuery);
+  const [page, setPage]               = useState(1);
 
-  // Debounce search → URL (300 ms)
+  // Debounce search → URL (300 ms); reset page
   useEffect(() => {
     const t = setTimeout(() => {
       setSearchParams(
@@ -263,11 +265,13 @@ export default function VideosListPage() {
         },
         { replace: true },
       );
+      setPage(1);
     }, 300);
     return () => clearTimeout(t);
   }, [searchInput, setSearchParams]);
 
-  const setFilter = (key: string, value: string) =>
+  const setFilter = (key: string, value: string) => {
+    setPage(1);
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
@@ -277,9 +281,11 @@ export default function VideosListPage() {
       },
       { replace: true },
     );
+  };
 
   const clearFilters = () => {
     setSearchInput('');
+    setPage(1);
     setSearchParams({}, { replace: true });
   };
 
@@ -307,31 +313,38 @@ export default function VideosListPage() {
   // ─── Queries ──────────────────────────────────────────────────────────
 
   const {
-    data: videos,
+    data: videoResponse,
     isLoading,
     isFetching,
     isError,
     refetch,
   } = useQuery({
-    queryKey: ['videos', { search: searchQuery, is_live: isLiveParam, category_id: categoryFilter }],
+    queryKey: ['videos', { page, search: searchQuery, is_live: isLiveParam, category_id: categoryFilter, upload_status: uploadStatusFilter, access: accessFilter }],
     queryFn:  () =>
       getVideos({
-        ...(searchQuery              && { search: searchQuery }),
-        ...(isLiveForApi !== undefined && { is_live: isLiveForApi }),
-        ...(categoryFilter           && { category_id: categoryFilter }),
-      } as Parameters<typeof getVideos>[0]),
+        page,
+        limit: 20,
+        search: searchQuery || undefined,
+        is_live: isLiveForApi,
+        category_id: categoryFilter || undefined,
+        upload_status: (uploadStatusFilter as VideoUploadStatus) || undefined,
+        department_access: (accessFilter as 'ALL' | 'RESTRICTED') || undefined,
+      }),
     placeholderData: keepPreviousData,
     refetchInterval: (query) => {
-      const data = query.state.data as Video[] | undefined;
-      return data?.some((v) => v.upload_status === VideoUploadStatus.UPLOADING)
+      const res = query.state.data as PaginatedResponse<Video> | undefined;
+      return res?.data?.some((v) => v.upload_status === VideoUploadStatus.UPLOADING)
         ? 10_000
         : false;
     },
   });
 
+  const videos    = videoResponse?.data ?? [];
+  const videoMeta = videoResponse?.meta;
+
   const { data: allCategories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn:  getCategories,
+    queryKey: ['categories-public'],
+    queryFn:  getCategoriesPublic,
   });
 
   const rootCategories = useMemo(
@@ -342,15 +355,7 @@ export default function VideosListPage() {
     [allCategories],
   );
 
-  // ─── Client-side filters ──────────────────────────────────────────────
-
-  const filteredVideos = useMemo(() => {
-    if (!videos) return [];
-    let result = videos;
-    if (uploadStatusFilter) result = result.filter((v) => v.upload_status === uploadStatusFilter);
-    if (accessFilter)       result = result.filter((v) => v.department_access === accessFilter);
-    return result;
-  }, [videos, uploadStatusFilter, accessFilter]);
+  const filteredVideos = videos;
 
   // ─── Mutations ────────────────────────────────────────────────────────
 
@@ -508,7 +513,7 @@ export default function VideosListPage() {
 
       {/* ── Empty state ───────────────────────────────────────────────────── */}
       {!isLoading && !isError && filteredVideos.length === 0 && (
-        !videos || videos.length === 0 ? (
+        videoMeta?.total === 0 && !hasFilters ? (
           <div>
             <EmptyState
               icon={VideoIcon}
@@ -537,23 +542,30 @@ export default function VideosListPage() {
 
       {/* ── Video grid ────────────────────────────────────────────────────── */}
       {!isLoading && !isError && filteredVideos.length > 0 && (
-        <div
-          className={`grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 transition-opacity duration-200 ${
-            isFetching ? 'opacity-60' : 'opacity-100'
-          }`}
-        >
-          {filteredVideos.map((video) => (
-            <VideoCard
-              key={video.id}
-              video={video}
-              allCategories={allCategories}
-              isPending={pendingIds.has(video.id)}
-              onGoLive={handleGoLive}
-              onTakeOffline={handleTakeOffline}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
+        <>
+          <div
+            className={`grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 transition-opacity duration-200 ${
+              isFetching ? 'opacity-60' : 'opacity-100'
+            }`}
+          >
+            {filteredVideos.map((video) => (
+              <VideoCard
+                key={video.id}
+                video={video}
+                allCategories={allCategories}
+                isPending={pendingIds.has(video.id)}
+                onGoLive={handleGoLive}
+                onTakeOffline={handleTakeOffline}
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
+          {videoMeta && (
+            <div className="mt-6">
+              <Pagination meta={videoMeta} onPageChange={setPage} isLoading={isFetching} />
+            </div>
+          )}
+        </>
       )}
 
       {/* ── Dialogs ───────────────────────────────────────────────────────── */}
