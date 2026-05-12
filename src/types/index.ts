@@ -115,6 +115,8 @@ export interface Log {
   id: string;
   actor_id: string;
   actor_role: ActorRole;
+  actor_name?: string | null;
+  actor_email?: string | null;
   action_type: string;
   target_type: string;
   target_id: string;

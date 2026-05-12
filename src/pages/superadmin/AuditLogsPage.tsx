@@ -230,8 +230,24 @@ function DetailPanel({ log, onClose }: DetailPanelProps) {
               <section>
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">Actor</h3>
                 <div className="space-y-2">
-                  <p className="break-all font-mono text-xs text-lng-grey">{log.actor_id}</p>
-                  <RoleBadge role={log.actor_role} />
+                  <div>
+                    <p className="mb-0.5 text-xs text-gray-400">Email</p>
+                    <p className="break-all text-xs text-lng-grey">{log.actor_email ?? 'Unknown'}</p>
+                  </div>
+                  {log.actor_name && (
+                    <div>
+                      <p className="mb-0.5 text-xs text-gray-400">Name</p>
+                      <p className="text-xs text-lng-grey">{log.actor_name}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="mb-0.5 text-xs text-gray-400">Role</p>
+                    <RoleBadge role={log.actor_role} />
+                  </div>
+                  <div>
+                    <p className="mb-0.5 text-xs text-gray-400">ID</p>
+                    <p className="break-all font-mono text-xs text-gray-400">{log.actor_id}</p>
+                  </div>
                 </div>
               </section>
 
@@ -541,12 +557,14 @@ export default function AuditLogsPage() {
                   {/* Actor */}
                   <td className="px-4 py-3">
                     <div className="space-y-1">
-                      <p
-                        className="max-w-[120px] truncate font-mono text-xs text-lng-grey"
-                        title={log.actor_id}
-                      >
-                        {truncate(log.actor_id, 14)}
-                      </p>
+                      {log.actor_email ? (
+                        <p className="text-xs font-semibold text-lng-grey">{log.actor_email}</p>
+                      ) : (
+                        <p className="text-xs italic text-gray-400">System</p>
+                      )}
+                      {log.actor_name && (
+                        <p className="text-xs text-gray-400">{log.actor_name}</p>
+                      )}
                       <RoleBadge role={log.actor_role} />
                     </div>
                   </td>
