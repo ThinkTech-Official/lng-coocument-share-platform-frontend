@@ -160,7 +160,7 @@ export default function ContractorsListPage() {
     queryKey: ['contractors', { page, search: debouncedSearch, statusFilter, deptFilter }],
     queryFn:  () => getContractors({
       page,
-      limit: 20,
+      limit: 10,
       search: debouncedSearch || undefined,
       is_active: statusFilter === 'all' ? undefined : statusFilter === 'active',
       department_id: deptFilter || undefined,

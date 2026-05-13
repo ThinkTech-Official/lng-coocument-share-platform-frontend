@@ -323,7 +323,7 @@ export default function VideosListPage() {
     queryFn:  () =>
       getVideos({
         page,
-        limit: 20,
+        limit: 10,
         search: searchQuery || undefined,
         is_live: isLiveForApi,
         category_id: categoryFilter || undefined,

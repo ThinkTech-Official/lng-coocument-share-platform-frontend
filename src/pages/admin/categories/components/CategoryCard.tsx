@@ -37,8 +37,8 @@ export default function CategoryCard({
       <div className="rounded-lg border-l-4 border-lng-blue bg-white p-5 shadow-sm">
         <div className="flex items-center gap-4">
           {/* Expand / collapse toggle */}
+            {hasSubcategories && (
           <div className="flex w-5 shrink-0 items-center justify-center">
-            {hasSubcategories ? (
               <button
                 onClick={onToggleExpand}
                 className="flex items-center justify-center text-lng-grey transition-colors hover:text-lng-blue"
@@ -46,17 +46,14 @@ export default function CategoryCard({
               >
                 {expanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
               </button>
-            ) : (
-              <span className="w-5" />
-            )}
-          </div>
+          </div>)}
 
           {/* Name + badges */}
-          <div className="flex min-w-0 flex-1 items-center gap-3">
+          <div className="flex min-w-0 sm:flex-1 sm:flex-row flex-col  items-center gap-3">
             <span className="truncate font-bold text-lng-grey">
               <Highlight text={category.name} query={searchQuery} />
             </span>
-            <Badge variant="neutral">Order: {category.sort_order}</Badge>
+            <Badge variant="neutral" className='text-nowrap'>Order: {category.sort_order}</Badge>
             <span className="shrink-0 text-xs text-lng-grey opacity-60">
               {hasSubcategories
                 ? `${subcategoriesCount} subcategor${subcategoriesCount === 1 ? 'y' : 'ies'}`
@@ -103,7 +100,7 @@ export default function CategoryCard({
           <span className="truncate text-sm text-lng-grey">
             <Highlight text={category.name} query={searchQuery} />
           </span>
-          <Badge variant="neutral">Order: {category.sort_order}</Badge>
+          <Badge variant="neutral" className='text-nowrap'>Order: {category.sort_order}</Badge>
         </div>
 
         {/* Actions */}

@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { getCategory, getCategoriesPublic, createCategory, updateCategory } from '../../api/categories';
 import { categorySchema } from '../../constants/schemas';
-import { type CategoryFormValues } from '../../constants/types';
+import { type CategoryFormValues } from '../../constants/schemas';
 
 export function useCategoryForm(id?: string) {
   const navigate = useNavigate();

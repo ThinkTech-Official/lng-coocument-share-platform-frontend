@@ -34,7 +34,7 @@ export function useCategoryTree() {
 
   const { data: rawData, isLoading, isError, refetch } = useQuery({
     queryKey: ['categories', { page, search: debouncedSearch }],
-    queryFn:  () => getCategories({ page, limit: 20, search: debouncedSearch || undefined }),
+    queryFn:  () => getCategories({ page, limit: 10, search: debouncedSearch || undefined }),
   });
 
   const categories = rawData?.data ?? [];

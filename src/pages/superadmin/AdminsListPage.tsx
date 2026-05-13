@@ -150,7 +150,7 @@ export default function AdminsListPage() {
 
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
     queryKey: ['admins', { page, search: debouncedSearch }],
-    queryFn:  () => getAdmins({ page, limit: 20, search: debouncedSearch || undefined }),
+    queryFn:  () => getAdmins({ page, limit: 10, search: debouncedSearch || undefined }),
     placeholderData: keepPreviousData,
   });
 

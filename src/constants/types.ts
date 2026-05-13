@@ -1,9 +1,3 @@
-export interface CategoryFormValues {
-  type: 'root' | 'subcategory';
-  parent_category_id: string | null;
-  name: string;
-  sort_order: number;
-}
 
 export interface DepartmentFormValues {
   name: string;

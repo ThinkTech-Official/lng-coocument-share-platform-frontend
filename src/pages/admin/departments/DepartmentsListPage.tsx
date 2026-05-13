@@ -147,7 +147,7 @@ export default function DepartmentsListPage() {
 
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
     queryKey: ['departments', { page, search: debouncedSearch }],
-    queryFn:  () => getDepartments({ page, limit: 20, search: debouncedSearch || undefined }),
+    queryFn:  () => getDepartments({ page, limit: 10, search: debouncedSearch || undefined }),
     placeholderData: keepPreviousData,
   });
 

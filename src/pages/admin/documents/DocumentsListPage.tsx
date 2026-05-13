@@ -154,7 +154,7 @@ export default function DocumentsListPage() {
     queryFn: () =>
       getDocuments({
         page,
-        limit: 20,
+        limit: 10,
         search: searchQuery || undefined,
         state: (stateFilter as DocumentState) || undefined,
         category_id: categoryFilter || undefined,
@@ -165,6 +165,7 @@ export default function DocumentsListPage() {
 
   const documents = docResponse?.data ?? [];
   const docMeta   = docResponse?.meta;
+  console.log("docMeta", docMeta);
 
   const { data: allCategories = [] } = useQuery({
     queryKey: ['categories-public'],
