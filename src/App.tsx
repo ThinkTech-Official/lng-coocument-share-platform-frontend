@@ -6,11 +6,13 @@ import {
   Route,
   Navigate,
   Outlet,
+  useRouteError,
 } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { Role } from './types';
 import Spinner from './components/ui/Spinner';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import ErrorDisplay from './components/common/ErrorDisplay';
 
 import RoleRoute from './components/guards/RoleRoute';
 import ForceResetRoute from './components/guards/ForceResetRoute';
@@ -82,11 +84,18 @@ function SuspenseOutlet() {
   );
 }
 
+// ─── Router Error Boundary ───────────────────────────────────────────────────
+
+function RootErrorBoundary() {
+  const error = useRouteError() as Error;
+  return <ErrorDisplay error={error} />;
+}
+
 // ─── Router (data router — required for useBlocker) ───────────────────────────
 
 const router = createBrowserRouter(
   createRoutesFromElements(
-    <Route element={<SuspenseOutlet />}>
+    <Route element={<SuspenseOutlet />} errorElement={<RootErrorBoundary />}>
       <Route path="/" element={<RootRedirect />} />
 
       {/* Public auth routes */}
