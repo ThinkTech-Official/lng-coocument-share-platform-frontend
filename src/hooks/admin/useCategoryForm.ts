@@ -101,13 +101,18 @@ export function useCategoryForm(id?: string) {
       navigate('/admin/categories');
     },
     onError: (error: unknown) => {
-      const status = (error as { response?: { status?: number } })?.response?.status;
+      const resp = (error as { response?: { status?: number; data?: { message?: string } } })?.response;
+      const status = resp?.status;
+      const message = resp?.data?.message;
+
       if (status === 409) {
-        setError('name', { message: 'A category with this name already exists.' });
+        toast.error(message ?? 'A category with this name already exists.');
+        setError('name', { message: message ?? 'A category with this name already exists.' });
       } else if (status === 400) {
-        setError('parent_category_id', { message: 'Subcategories cannot have children.' });
+        toast.error(message ?? 'Subcategories cannot have children.');
+        setError('parent_category_id', { message: message ?? 'Subcategories cannot have children.' });
       } else {
-        toast.error('Failed to create category. Please try again.');
+        toast.error(message ?? 'Failed to create category. Please try again.');
       }
     },
   });
@@ -122,11 +127,15 @@ export function useCategoryForm(id?: string) {
       navigate('/admin/categories');
     },
     onError: (error: unknown) => {
-      const status = (error as { response?: { status?: number } })?.response?.status;
+      const resp = (error as { response?: { status?: number; data?: { message?: string } } })?.response;
+      const status = resp?.status;
+      const message = resp?.data?.message;
+
       if (status === 409) {
-        setError('name', { message: 'A category with this name already exists.' });
+        toast.error(message ?? 'A category with this name already exists.');
+        setError('name', { message: message ?? 'A category with this name already exists.' });
       } else {
-        toast.error('Failed to update category. Please try again.');
+        toast.error(message ?? 'Failed to update category. Please try again.');
       }
     },
   });
