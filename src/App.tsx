@@ -53,6 +53,8 @@ const VideoDetailPage       = lazy(() => import('./pages/admin/videos/VideoDetai
 const HomePage             = lazy(() => import('./pages/contractor/HomepagePage'));
 const DocumentViewerPage   = lazy(() => import('./pages/contractor/DocumentViewerPage'));
 const VideoPlayerPage      = lazy(() => import('./pages/contractor/VideoPlayerPage'));
+const NotFoundPage         = lazy(() => import('./pages/errors/NotFoundPage'));
+
 
 // ─── Root redirect ────────────────────────────────────────────────────────────
 
@@ -153,7 +155,11 @@ const router = createBrowserRouter(
           <Route path="/videos/:id"      element={<VideoPlayerPage />} />
         </Route>
       </Route>
+
+      {/* Catch-all route for 404 */}
+      <Route path="*" element={<NotFoundPage />} />
     </Route>
+
   )
 );
 
