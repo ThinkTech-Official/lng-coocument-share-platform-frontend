@@ -34,35 +34,41 @@ export default function CategoryCard({
 
   if (isRoot) {
     return (
-      <div className="rounded-lg border-l-4 border-lng-blue bg-white p-5 shadow-sm">
-        <div className="flex items-center gap-4">
-          {/* Expand / collapse toggle */}
+      <div className="rounded-lg border-l-4 border-lng-blue bg-white p-4 sm:p-5 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          {/* Toggle + Name group */}
+          <div className="flex flex-1 items-center gap-4 min-w-0">
+            {/* Expand / collapse toggle */}
             {hasSubcategories && (
-          <div className="flex w-5 shrink-0 items-center justify-center">
-              <button
-                onClick={onToggleExpand}
-                className="flex items-center justify-center text-lng-grey transition-colors hover:text-lng-blue"
-                aria-label={expanded ? 'Collapse subcategories' : 'Expand subcategories'}
-              >
-                {expanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-              </button>
-          </div>)}
+              <div className="flex w-5 shrink-0 items-center justify-center">
+                <button
+                  onClick={onToggleExpand}
+                  className="flex items-center justify-center text-lng-grey transition-colors hover:text-lng-blue"
+                  aria-label={expanded ? 'Collapse subcategories' : 'Expand subcategories'}
+                >
+                  {expanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                </button>
+              </div>
+            )}
 
-          {/* Name + badges */}
-          <div className="flex min-w-0 sm:flex-1 sm:flex-row flex-col  items-center gap-3">
-            <span className="truncate font-bold text-lng-grey">
-              <Highlight text={category.name} query={searchQuery} />
-            </span>
-            <Badge variant="neutral" className='text-nowrap'>Order: {category.sort_order}</Badge>
-            <span className="shrink-0 text-xs text-lng-grey opacity-60">
-              {hasSubcategories
-                ? `${subcategoriesCount} subcategor${subcategoriesCount === 1 ? 'y' : 'ies'}`
-                : 'No subcategories'}
-            </span>
+            {/* Name + badges */}
+            <div className="flex min-w-0 flex-1 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-3">
+              <span className="truncate font-bold text-lng-grey">
+                <Highlight text={category.name} query={searchQuery} />
+              </span>
+              <div className="flex items-center gap-2">
+                <Badge variant="neutral" className="text-nowrap shrink-0">Order: {category.sort_order}</Badge>
+                <span className="shrink-0 text-xs text-lng-grey opacity-60">
+                  {hasSubcategories
+                    ? `${subcategoriesCount} subcategor${subcategoriesCount === 1 ? 'y' : 'ies'}`
+                    : 'No subcategories'}
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Actions */}
-          <div className="flex shrink-0 gap-2">
+          <div className="flex shrink-0 gap-2 self-end sm:self-center">
             <Button
               variant="outline"
               size="sm"
@@ -90,21 +96,24 @@ export default function CategoryCard({
 
   // Subcategory card
   return (
-    <div className="rounded border-l-2 border-lng-blue-40 bg-lng-blue-20 px-4 py-3">
-      <div className="flex items-center gap-3">
-        {/* Hierarchy indicator */}
-        <CornerDownRight size={15} className="shrink-0 text-lng-grey opacity-40" />
+    <div className="rounded border-l-2 border-lng-blue-40 bg-lng-blue-20 p-3 sm:px-4 sm:py-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        {/* Hierarchy + Name group */}
+        <div className="flex flex-1 items-center gap-3 min-w-0">
+          {/* Hierarchy indicator */}
+          <CornerDownRight size={15} className="shrink-0 text-lng-grey opacity-40" />
 
-        {/* Name + badge */}
-        <div className="flex min-w-0 flex-1 items-center gap-3">
-          <span className="truncate text-sm text-lng-grey">
-            <Highlight text={category.name} query={searchQuery} />
-          </span>
-          <Badge variant="neutral" className='text-nowrap'>Order: {category.sort_order}</Badge>
+          {/* Name + badge */}
+          <div className="flex min-w-0 flex-1 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-3">
+            <span className="truncate text-sm text-lng-grey">
+              <Highlight text={category.name} query={searchQuery} />
+            </span>
+            <Badge variant="neutral" className="text-nowrap shrink-0">Order: {category.sort_order}</Badge>
+          </div>
         </div>
 
         {/* Actions */}
-        <div className="flex shrink-0 gap-2">
+        <div className="flex shrink-0 gap-2 self-end sm:self-center">
           <Button
             variant="outline"
             size="sm"

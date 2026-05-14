@@ -126,7 +126,7 @@ export default function CategoriesListPage() {
                   }}
                 >
                   {hasSubs && (
-                    <div className="ml-12 mt-2 space-y-2">
+                    <div className="ml-6 sm:ml-12 mt-2 space-y-2">
                       {cat.subcategories.map((sub) => {
                         const isSubDeleting = deleteMutation.isPending && deleteTarget?.id === sub.id;
                         return (
