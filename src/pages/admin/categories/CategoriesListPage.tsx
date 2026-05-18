@@ -34,7 +34,7 @@ export default function CategoriesListPage() {
   } = useCategoryTree();
 
   useEffect(() => {
-    document.title = 'Categories — LNG Canada';
+    document.title = 'Categories LNG Canada';
     return () => { document.title = 'LNG Canada'; };
   }, []);
 

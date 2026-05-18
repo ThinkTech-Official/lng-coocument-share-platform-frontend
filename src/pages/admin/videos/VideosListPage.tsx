@@ -180,7 +180,7 @@ function VideoCard({
           variant="outline"
           size="sm"
           disabled={isPending || isFailed}
-          title={isFailed ? 'Video upload failed — delete and re-upload' : undefined}
+          title={isFailed ? 'Video upload failed delete and re-upload' : undefined}
           onClick={() => navigate(`/admin/videos/${video.id}`)}
         >
           <Pencil size={13} />
@@ -302,7 +302,7 @@ export default function VideosListPage() {
 
   // ─── Page title ───────────────────────────────────────────────────────
   useEffect(() => {
-    document.title = 'Videos — LNG Canada';
+    document.title = 'Videos LNG Canada';
     return () => { document.title = 'LNG Canada'; };
   }, []);
 

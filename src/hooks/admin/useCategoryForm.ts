@@ -15,8 +15,8 @@ export function useCategoryForm(id?: string) {
 
   useEffect(() => {
     document.title = isEdit
-      ? 'Edit Category — LNG Canada'
-      : 'Create Category — LNG Canada';
+      ? 'Edit Category LNG Canada'
+      : 'Create Category LNG Canada';
     return () => {
       document.title = 'LNG Canada';
     };

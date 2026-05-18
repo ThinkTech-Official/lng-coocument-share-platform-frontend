@@ -15,8 +15,8 @@ export function useDepartmentForm(id?: string) {
 
   useEffect(() => {
     document.title = isEdit
-      ? 'Edit Department — LNG Canada'
-      : 'Create Department — LNG Canada';
+      ? 'Edit Department LNG Canada'
+      : 'Create Department LNG Canada';
     return () => {
       document.title = 'LNG Canada';
     };

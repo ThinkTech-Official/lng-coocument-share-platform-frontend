@@ -69,7 +69,7 @@ export default function DocumentViewerPage() {
   // Update browser tab title
   useEffect(() => {
     if (data?.title) {
-      document.title = `${data.title} — LNG Canada`;
+      document.title = `${data.title} LNG Canada`;
     }
     return () => {
       document.title = 'LNG Canada';

@@ -37,7 +37,7 @@ export default function LoginPage() {
   const setAuth  = useAuthStore((s) => s.setAuth);
 
   useEffect(() => {
-    document.title = 'Sign In — LNG Canada';
+    document.title = 'Sign In LNG Canada';
     return () => { document.title = 'LNG Canada'; };
   }, []);
 

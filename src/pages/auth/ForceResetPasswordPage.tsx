@@ -174,7 +174,7 @@ export default function ForceResetPasswordPage() {
   }, []);
 
   useEffect(() => {
-    document.title = 'Set New Password — LNG Canada';
+    document.title = 'Set New Password LNG Canada';
     return () => { document.title = 'LNG Canada'; };
   }, []);
 

@@ -89,7 +89,7 @@ export default function SuperadminDashboardPage() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    document.title = 'Dashboard — LNG Canada';
+    document.title = 'Dashboard LNG Canada';
     return () => { document.title = 'LNG Canada'; };
   }, []);
 

@@ -176,7 +176,7 @@ export default function AdminDetailPage() {
   // ─── Page title ─────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    document.title = admin ? `${admin.name} — LNG Canada` : 'Admin Details — LNG Canada';
+    document.title = admin ? `${admin.name} LNG Canada` : 'Admin Details LNG Canada';
     return () => { document.title = 'LNG Canada'; };
   }, [admin]);
 

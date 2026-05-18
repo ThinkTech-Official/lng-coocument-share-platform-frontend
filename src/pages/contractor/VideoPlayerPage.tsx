@@ -59,7 +59,7 @@ export default function VideoPlayerPage() {
   // Browser tab title
   useEffect(() => {
     if (videoQuery.data?.title) {
-      document.title = `${videoQuery.data.title} — LNG Canada`;
+      document.title = `${videoQuery.data.title} LNG Canada`;
     }
     return () => {
       document.title = 'LNG Canada';

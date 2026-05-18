@@ -137,7 +137,7 @@ export default function DocumentsListPage() {
   const selectAllRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    document.title = 'Documents — LNG Canada';
+    document.title = 'Documents LNG Canada';
     return () => { document.title = 'LNG Canada'; };
   }, []);
 

@@ -327,7 +327,7 @@ export default function AuditLogsPage() {
   const tableRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    document.title = 'Audit Logs — LNG Canada';
+    document.title = 'Audit Logs LNG Canada';
     return () => { document.title = 'LNG Canada'; };
   }, []);
 

@@ -23,8 +23,8 @@ export function useDocumentForm(id?: string) {
 
   useEffect(() => {
     document.title = isEdit
-      ? 'Edit Document — LNG Canada'
-      : 'Upload Document — LNG Canada';
+      ? 'Edit Document LNG Canada'
+      : 'Upload Document LNG Canada';
     return () => {
       document.title = 'LNG Canada';
     };

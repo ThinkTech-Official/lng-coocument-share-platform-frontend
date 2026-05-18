@@ -381,7 +381,7 @@ export default function UploadVideoPage() {
               <div className="mb-4 flex items-start gap-2">
                 <AlertTriangle size={14} className="mt-0.5 shrink-0 text-lng-red" />
                 <p className="text-xs text-lng-red">
-                  Required — upload is blocked without a thumbnail
+                  Required upload is blocked without a thumbnail
                 </p>
               </div>
 
