@@ -85,14 +85,10 @@ export default function ForgotPasswordPage() {
 
   return (
     <div>
-      {/* Tagline */}
-      <p className="mb-7 -mt-2 text-center text-xs text-lng-blue-60">
-        Opportunity for British Columbia. Energy for the world.
-      </p>
 
       {/* Heading */}
-      <h2 className="mb-1 text-lg font-bold text-lng-grey">Forgot Password</h2>
-      <p className="mb-6 text-sm text-gray-400">
+      <h2 className="mb-2 text-xl font-bold text-lng-grey text-center">Forgot Password?</h2>
+      <p className="mb-8 text-gray-400 text-center">
         Enter your email address and we will send you a link to reset your password.
       </p>
 
@@ -113,7 +109,7 @@ export default function ForgotPasswordPage() {
           variant="primary"
           loading={isPending}
           disabled={isPending}
-          className="w-full"
+          className="w-full rounded-full"
         >
           Send Reset Link
         </Button>
