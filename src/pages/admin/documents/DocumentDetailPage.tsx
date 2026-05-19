@@ -371,6 +371,7 @@ export default function DocumentDetailPage() {
                 size="sm"
                 onClick={() => window.open(doc.document_url!, '_blank', 'noopener,noreferrer')}
                 disabled={isPending}
+                className='text-nowrap'
               >
                 <ExternalLink size={13} />
                 Open Current File
