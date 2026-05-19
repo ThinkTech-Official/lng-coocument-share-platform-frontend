@@ -7,7 +7,7 @@ export default function AuthLayout() {
       {/* Left Column - Desktop Cover & Branding */}
       <div 
         className="hidden lg:flex md:w-1/2 relative bg-cover bg-center flex-col items-center justify-center p-12 select-none"
-        style={{ backgroundImage: `url('/dbdaa9a63da1f216e3e8aa7641c90b3f03cdd0f7.png')` }}
+        style={{ backgroundImage: `url('/image 8.png')` }}
       >
         <div className=" max-w-sm text-center absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/3">
           <img 
