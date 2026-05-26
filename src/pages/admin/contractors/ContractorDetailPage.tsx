@@ -129,6 +129,7 @@ export default function ContractorDetailPage() {
                 label="Full Name"
                 type="text"
                 placeholder="Enter full name"
+                maxLength={60}
                 disabled={isPending}
                 error={errors.name?.message}
                 {...register('name')}

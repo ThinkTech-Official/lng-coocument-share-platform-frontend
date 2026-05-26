@@ -193,11 +193,24 @@ export default function CategoryFormPage() {
               type="number"
               placeholder="1"
               min={1}
+              max={999}
               step={1}
               disabled={isPending}
               error={errors.sort_order?.message}
               onKeyDown={(e) => {
-                if (['e', 'E', '+', '-', '.'].includes(e.key)) e.preventDefault();
+                const target = e.target as HTMLInputElement;
+                if (['e', 'E', '+', '-', '.'].includes(e.key)) {
+                  e.preventDefault();
+                  return;
+                }
+                if (
+                  target.value.length >= 3 &&
+                  !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key) &&
+                  !e.ctrlKey &&
+                  !e.metaKey
+                ) {
+                  e.preventDefault();
+                }
               }}
               {...register('sort_order', { valueAsNumber: true })}
             />
