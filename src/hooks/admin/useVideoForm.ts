@@ -28,8 +28,8 @@ export function useVideoForm(id?: string) {
 
   useEffect(() => {
     document.title = isEdit
-      ? 'Edit Video — LNG Canada'
-      : 'Upload Video — LNG Canada';
+      ? 'Edit Video LNG Canada'
+      : 'Upload Video LNG Canada';
     return () => {
       document.title = 'LNG Canada';
     };

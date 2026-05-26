@@ -24,7 +24,7 @@ export default function ForgotPasswordPage() {
   const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    document.title = 'Forgot Password — LNG Canada';
+    document.title = 'Forgot Password LNG Canada';
     return () => { document.title = 'LNG Canada'; };
   }, []);
 

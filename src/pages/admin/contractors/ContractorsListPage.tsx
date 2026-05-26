@@ -138,7 +138,7 @@ export default function ContractorsListPage() {
   });
 
   useEffect(() => {
-    document.title = 'Contractors — LNG Canada';
+    document.title = 'Contractors LNG Canada';
     return () => { document.title = 'LNG Canada'; };
   }, []);
 

@@ -130,7 +130,7 @@ export default function DepartmentsListPage() {
   const [conflicts, setConflicts]           = useState<string[] | null>(null);
 
   useEffect(() => {
-    document.title = 'Departments — LNG Canada';
+    document.title = 'Departments LNG Canada';
     return () => { document.title = 'LNG Canada'; };
   }, []);
 

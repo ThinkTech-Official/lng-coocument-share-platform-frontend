@@ -27,7 +27,7 @@ export default function CreateAdminPage() {
   const queryClient  = useQueryClient();
 
   useEffect(() => {
-    document.title = 'Create Admin — LNG Canada';
+    document.title = 'Create Admin LNG Canada';
     return () => { document.title = 'LNG Canada'; };
   }, []);
 

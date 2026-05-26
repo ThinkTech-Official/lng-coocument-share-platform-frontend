@@ -27,8 +27,8 @@ export function useContractorForm(id?: string) {
 
   useEffect(() => {
     document.title = isEdit
-      ? 'Edit Contractor — LNG Canada'
-      : 'Create Contractor — LNG Canada';
+      ? 'Edit Contractor LNG Canada'
+      : 'Create Contractor LNG Canada';
     return () => {
       document.title = 'LNG Canada';
     };
