@@ -50,7 +50,7 @@ const VideosListPage        = lazy(() => import('./pages/admin/videos/VideosList
 const UploadVideoPage       = lazy(() => import('./pages/admin/videos/UploadVideoPage'));
 const VideoDetailPage       = lazy(() => import('./pages/admin/videos/VideoDetailPage'));
 
-const HomePage             = lazy(() => import('./pages/contractor/HomepagePage'));
+const HomePage             = lazy(() => import('./pages/contractor/NotificationsPage'));
 const DocumentViewerPage   = lazy(() => import('./pages/contractor/DocumentViewerPage'));
 const VideoPlayerPage      = lazy(() => import('./pages/contractor/VideoPlayerPage'));
 const NotFoundPage         = lazy(() => import('./pages/errors/NotFoundPage'));
