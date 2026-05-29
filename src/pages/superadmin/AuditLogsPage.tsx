@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback, useLayoutEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import {
@@ -318,6 +318,16 @@ export default function AuditLogsPage() {
   const dateFrom   = searchParams.get('date_from')   ?? '';
   const dateTo     = searchParams.get('date_to')     ?? '';
 
+  // Local input state — avoids triggering API on every keystroke during manual entry
+  const [localDateFrom, setLocalDateFrom] = useState(dateFrom);
+  const [localDateTo,   setLocalDateTo]   = useState(dateTo);
+  const dateFromDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dateToDebounce   = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Keep local state in sync if URL changes externally (e.g. clear filters)
+  useLayoutEffect(() => { setLocalDateFrom(dateFrom); }, [dateFrom]);
+  useLayoutEffect(() => { setLocalDateTo(dateTo); },   [dateTo]);
+
   // Cursor stack: [] = page 1, [c1] = page 2, [c1,c2] = page 3 …
   const [cursorStack, setCursorStack] = useState<string[]>([]);
 
@@ -373,6 +383,29 @@ export default function AuditLogsPage() {
       },
       { replace: true }
     );
+  }
+
+  function handleDateChange(
+    val: string,
+    key: string,
+    setLocal: React.Dispatch<React.SetStateAction<string>>,
+    debounceRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>
+  ) {
+    setLocal(val);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    // Only commit when the value looks like a complete date (YYYY-MM-DD = 10 chars)
+    if (val.length === 10 || val === '') {
+      debounceRef.current = setTimeout(() => setFilter(key, val), 400);
+    }
+  }
+
+  function handleDateBlur(
+    val: string,
+    key: string,
+    debounceRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>
+  ) {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setFilter(key, val);
   }
 
   function clearFilters() {
@@ -449,9 +482,10 @@ export default function AuditLogsPage() {
             <label className="text-xs font-medium text-lng-grey">From</label>
             <input
               type="date"
-              value={dateFrom}
-              max={dateTo || undefined}
-              onChange={(e) => setFilter('date_from', e.target.value)}
+              value={localDateFrom}
+              max={localDateTo || undefined}
+              onChange={(e) => handleDateChange(e.target.value, 'date_from', setLocalDateFrom, dateFromDebounce)}
+              onBlur={(e) => handleDateBlur(e.target.value, 'date_from', dateFromDebounce)}
               className={selectCls}
             />
           </div>
@@ -461,9 +495,10 @@ export default function AuditLogsPage() {
             <label className="text-xs font-medium text-lng-grey">To</label>
             <input
               type="date"
-              value={dateTo}
-              min={dateFrom || undefined}
-              onChange={(e) => setFilter('date_to', e.target.value)}
+              value={localDateTo}
+              min={localDateFrom || undefined}
+              onChange={(e) => handleDateChange(e.target.value, 'date_to', setLocalDateTo, dateToDebounce)}
+              onBlur={(e) => handleDateBlur(e.target.value, 'date_to', dateToDebounce)}
               className={selectCls}
             />
           </div>

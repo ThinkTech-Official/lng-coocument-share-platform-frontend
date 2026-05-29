@@ -32,17 +32,19 @@ export default function Button({
   return (
     <button
       disabled={disabled || loading}
-      className={`
-        inline-flex items-center justify-center gap-2 rounded font-medium
+      className={`relative inline-flex items-center justify-center gap-2 rounded font-medium
         transition-colors focus:outline-none focus:ring-2 focus:ring-lng-blue focus:ring-offset-1
         ${variantClasses[variant]} ${sizeClasses[size]} ${className}
       `}
       {...props}
     >
-      {loading ? (
-        <Spinner size="sm" color={variant === 'primary' || variant === 'danger' ? 'white' : 'blue'} />
-      ) : (
-        children
+      <span className={`inline-flex items-center justify-center gap-2 ${loading ? 'invisible' : ''}`}>
+        {children}
+      </span>
+      {loading && (
+        <span className="absolute inset-0 flex items-center justify-center">
+          <Spinner size="sm" color={variant === 'primary' || variant === 'danger' ? 'white' : 'blue'} />
+        </span>
       )}
     </button>
   );

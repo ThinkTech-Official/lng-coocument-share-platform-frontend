@@ -64,7 +64,7 @@ function SkeletonRow() {
 // ─── State badge ──────────────────────────────────────────────────────────────
 
 function StateBadge({ state }: { state: DocumentState }) {
-  if (state === 'PUBLISHED')   return <Badge variant="success">Published</Badge>;
+  if (state === 'PUBLISHED') return <Badge variant="success">Published</Badge>;
   if (state === 'UNPUBLISHED') return <Badge variant="warning">Unpublished</Badge>;
   return <Badge variant="neutral">Draft</Badge>;
 }
@@ -72,20 +72,20 @@ function StateBadge({ state }: { state: DocumentState }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DocumentsListPage() {
-  const navigate    = useNavigate();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   // ─── URL-persisted filters ────────────────────────────────────────────────
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const stateFilter    = searchParams.get('state') ?? '';
+  const stateFilter = searchParams.get('state') ?? '';
   const categoryFilter = searchParams.get('category_id') ?? '';
-  const accessFilter   = searchParams.get('access') ?? '';
-  const searchQuery    = searchParams.get('search') ?? '';
+  const accessFilter = searchParams.get('access') ?? '';
+  const searchQuery = searchParams.get('search') ?? '';
 
   const [searchInput, setSearchInput] = useState(() => searchQuery);
-  const [page, setPage]               = useState(1);
+  const [page, setPage] = useState(1);
 
   // Debounce search → URL; reset page
   useEffect(() => {
@@ -93,11 +93,12 @@ export default function DocumentsListPage() {
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
-          if (searchInput) next.set('search', searchInput);
+          const val = searchInput.trim();
+          if (val) next.set('search', val);
           else next.delete('search');
+          next.delete('page'); // Reset to page 1
           return next;
         },
-        { replace: true },
       );
       setPage(1);
     }, 300);
@@ -127,12 +128,12 @@ export default function DocumentsListPage() {
 
   // ─── Local UI state ───────────────────────────────────────────────────────
 
-  const [selectedIds, setSelectedIds]         = useState<Set<string>>(new Set());
-  const [pendingIds, setPendingIds]           = useState<Set<string>>(new Set());
-  const [bulkPending, setBulkPending]         = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
+  const [bulkPending, setBulkPending] = useState(false);
   const [unpublishTarget, setUnpublishTarget] = useState<Document | null>(null);
-  const [deleteTarget, setDeleteTarget]       = useState<Document | null>(null);
-  const [showBulkDelete, setShowBulkDelete]   = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Document | null>(null);
+  const [showBulkDelete, setShowBulkDelete] = useState(false);
 
   const selectAllRef = useRef<HTMLInputElement>(null);
 
@@ -164,12 +165,12 @@ export default function DocumentsListPage() {
   });
 
   const documents = docResponse?.data ?? [];
-  const docMeta   = docResponse?.meta;
+  const docMeta = docResponse?.meta;
   console.log("docMeta", docMeta);
 
   const { data: allCategories = [] } = useQuery({
     queryKey: ['categories-public'],
-    queryFn:  getCategoriesPublic,
+    queryFn: getCategoriesPublic,
   });
 
   // Root categories for the filter dropdown
@@ -184,8 +185,8 @@ export default function DocumentsListPage() {
 
   // ─── Selection helpers ────────────────────────────────────────────────────
 
-  const allSelected   = filteredDocuments.length > 0 && filteredDocuments.every((d) => selectedIds.has(d.id));
-  const someSelected  = filteredDocuments.some((d) => selectedIds.has(d.id));
+  const allSelected = filteredDocuments.length > 0 && filteredDocuments.every((d) => selectedIds.has(d.id));
+  const someSelected = filteredDocuments.some((d) => selectedIds.has(d.id));
   const selectedCount = filteredDocuments.filter((d) => selectedIds.has(d.id)).length;
 
   useEffect(() => {
@@ -215,7 +216,7 @@ export default function DocumentsListPage() {
 
   // ─── Pending helpers ──────────────────────────────────────────────────────
 
-  const addPending    = (id: string) => setPendingIds((p) => new Set(p).add(id));
+  const addPending = (id: string) => setPendingIds((p) => new Set(p).add(id));
   const removePending = (id: string) => setPendingIds((p) => { const n = new Set(p); n.delete(id); return n; });
 
   // ─── Status mutation ──────────────────────────────────────────────────────
@@ -226,9 +227,9 @@ export default function DocumentsListPage() {
     onMutate: ({ id }) => addPending(id),
     onSuccess: (_, { newState, prevState }) => {
       queryClient.invalidateQueries({ queryKey: ['documents'] });
-      if (newState === 'PUBLISHED' && prevState === 'DRAFT')        toast.success('Document published successfully');
+      if (newState === 'PUBLISHED' && prevState === 'DRAFT') toast.success('Document published successfully');
       else if (newState === 'PUBLISHED' && prevState === 'UNPUBLISHED') toast.success('Document re-published');
-      else if (newState === 'UNPUBLISHED')                          toast.success('Document unpublished');
+      else if (newState === 'UNPUBLISHED') toast.success('Document unpublished');
       setUnpublishTarget(null);
     },
     onError: () => toast.error('Failed to update document status. Please try again.'),
@@ -512,14 +513,13 @@ export default function DocumentsListPage() {
           {/* Data rows */}
           {!isLoading && !isError && filteredDocuments.length > 0 && (
             <tbody
-              className={`divide-y divide-gray-50 transition-opacity duration-200 ${
-                isFetching ? 'opacity-60' : 'opacity-100'
-              }`}
+              className={`divide-y divide-gray-50 transition-opacity duration-200 ${isFetching ? 'opacity-60' : 'opacity-100'
+                }`}
             >
               {filteredDocuments.map((doc) => {
-                const isPending  = pendingIds.has(doc.id) || bulkPending;
+                const isPending = pendingIds.has(doc.id) || bulkPending;
                 const isSelected = selectedIds.has(doc.id);
-                const catLabel   = getCategoryLabel(doc, allCategories);
+                const catLabel = getCategoryLabel(doc, allCategories);
 
                 return (
                   <tr
@@ -594,14 +594,13 @@ export default function DocumentsListPage() {
                         <button
                           title={
                             doc.state === 'PUBLISHED' ? 'Unpublish'
-                            : doc.state === 'UNPUBLISHED' ? 'Re-publish'
-                            : 'Publish'
+                              : doc.state === 'UNPUBLISHED' ? 'Re-publish'
+                                : 'Publish'
                           }
                           disabled={isPending}
                           onClick={() => handleStatusToggle(doc)}
-                          className={`rounded p-1.5 transition-colors hover:bg-gray-100 disabled:opacity-40 ${
-                            doc.state === 'PUBLISHED' ? 'text-lng-grey' : 'text-lng-blue'
-                          }`}
+                          className={`rounded p-1.5 transition-colors hover:bg-gray-100 disabled:opacity-40 ${doc.state === 'PUBLISHED' ? 'text-lng-grey' : 'text-lng-blue'
+                            }`}
                         >
                           {doc.state === 'PUBLISHED'
                             ? <EyeOff size={15} />
@@ -625,13 +624,12 @@ export default function DocumentsListPage() {
             </tbody>
           )}
         </table>
-
-        {/* Pagination */}
-        {!isLoading && !isError && docMeta && docMeta.total > 0 && (
-          <Pagination meta={docMeta} onPageChange={setPage} isLoading={isFetching} />
-        )}
       </div>
-
+      
+      {/* Pagination */}
+      {!isLoading && !isError && docMeta && docMeta.total > 0 && (
+        <Pagination meta={docMeta} onPageChange={setPage} isLoading={isFetching} />
+      )}
       {/* ── Unpublish confirm ──────────────────────────────────────────────── */}
       <ConfirmDialog
         open={!!unpublishTarget}

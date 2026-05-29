@@ -40,21 +40,20 @@ export default function Pagination({ meta, onPageChange, isLoading = false }: Pa
   };
 
   return (
-    <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
+    <div className="flex flex-col gap-2 sm:flex-row items-center justify-between border-t border-gray-100 px-4 py-3">
       <p className="text-xs text-gray-400">
         Showing {start}–{end} of {meta.total} result{meta.total !== 1 ? 's' : ''}
       </p>
       <div className="flex items-center gap-1.5">
-        <Button
-          variant="outline"
-          size="sm"
+        <button
           disabled={meta.page <= 1 || isLoading}
           onClick={() => onPageChange(meta.page - 1)}
-          className="hidden sm:inline-flex"
+           className="hidden sm:inline-flex items-center justify-center gap-2 rounded font-medium
+        transition-colors focus:outline-none focus:ring-2 focus:ring-lng-blue focus:ring-offset-1 border border-lng-blue text-lng-blue hover:bg-lng-blue-20 disabled:opacity-60 px-3 py-1.5 text-xs"
         >
           <ChevronLeft size={14} />
           Previous
-        </Button>
+        </button>
 
         {/* Mobile-only compact prev */}
         <Button
@@ -86,16 +85,15 @@ export default function Pagination({ meta, onPageChange, isLoading = false }: Pa
           ))}
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
+        <button
           disabled={!meta.hasNextPage || isLoading}
           onClick={() => onPageChange(meta.page + 1)}
-          className="hidden sm:inline-flex"
+          className="hidden sm:inline-flex items-center justify-center gap-2 rounded font-medium
+        transition-colors focus:outline-none focus:ring-2 focus:ring-lng-blue focus:ring-offset-1 border border-lng-blue text-lng-blue hover:bg-lng-blue-20 disabled:opacity-60 px-3 py-1.5 text-xs"
         >
           Next
           <ChevronRight size={14} />
-        </Button>
+        </button>
 
         {/* Mobile-only compact next */}
         <Button

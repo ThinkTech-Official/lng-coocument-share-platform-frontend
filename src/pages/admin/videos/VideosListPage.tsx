@@ -259,11 +259,12 @@ export default function VideosListPage() {
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
-          if (searchInput) next.set('search', searchInput);
+          const val = searchInput.trim();
+          if (val) next.set('search', val);
           else next.delete('search');
+          next.delete('page'); // Reset to page 1
           return next;
-        },
-        { replace: true },
+        }, { replace: true },
       );
       setPage(1);
     }, 300);

@@ -145,7 +145,7 @@ export default function ContractorsListPage() {
   // Debounce search 300 ms; reset page
   useEffect(() => {
     const t = setTimeout(() => {
-      setDebouncedSearch(search);
+      setDebouncedSearch(search.trim());
       setPage(1);
     }, 300);
     return () => clearTimeout(t);
@@ -367,7 +367,7 @@ export default function ContractorsListPage() {
               {!isLoading && !isError && contractors.map((contractor) => (
                 <tr
                   key={contractor.id}
-                  className="transition-colors hover:bg-lng-blue-20"
+                  className="transition-colors hover:bg-lng-blue-20 text-nowrap"
                 >
                   <td className="px-4 py-3 font-medium text-lng-grey">{contractor.name}</td>
                   <td className="px-4 py-3 text-lng-grey">{contractor.email}</td>

@@ -140,7 +140,7 @@ export default function AdminsListPage() {
   // Debounce search input 300 ms; reset page
   useEffect(() => {
     const t = setTimeout(() => {
-      setDebouncedSearch(search);
+      setDebouncedSearch(search.trim());
       setPage(1);
     }, 300);
     return () => clearTimeout(t);

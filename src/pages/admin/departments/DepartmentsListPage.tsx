@@ -137,7 +137,7 @@ export default function DepartmentsListPage() {
   // Debounce search 300 ms; reset page
   useEffect(() => {
     const t = setTimeout(() => {
-      setDebounced(search);
+      setDebounced(search.trim());
       setPage(1);
     }, 300);
     return () => clearTimeout(t);

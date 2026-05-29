@@ -179,70 +179,53 @@ export default function VideoPlayerPage() {
       </CenteredState>
     );
   }
-
   // ── Success ──
   const video = videoQuery.data!;
   const streamUrl = streamQuery.data!.stream_url;
   const categoryLabel = video.category?.name ?? 'Uncategorized';
 
   return (
-    <div className="-mx-6 -mt-6 bg-lng-blue-20 pb-12 px-6 pt-8">
-      <div className="max-w-4xl mx-auto">
-
-        {/* Back link */}
-        <div className="mb-4">
-          <button
-            onClick={() => navigate('/home')}
-            className="inline-flex items-center gap-1.5 text-sm text-lng-blue hover:text-lng-blue/80 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Home
-          </button>
-        </div>
-
-        {/* Player container */}
-        <div
-          className="relative aspect-video rounded-lg overflow-hidden shadow-lg bg-black mb-6"
-          onContextMenu={(e) => e.preventDefault()}
-        >
-          <video
-            key={streamUrl}
-            src={streamUrl}
-            style={{ width: '100%', height: '100%' }}
-            controls
-            disablePictureInPicture
-            controlsList="nodownload"
-            onError={handlePlayerError}
-          />
-
-          {/* Refresh overlay (shown when URL expired mid-playback) */}
-          {isRefreshing && (
-            <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-3 pointer-events-none">
-              <Loader2 className="h-10 w-10 text-white animate-spin" />
-              <p className="text-white text-sm">Refreshing video stream…</p>
-            </div>
-          )}
-        </div>
-
-        {/* Metadata card */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h1 className="text-xl font-bold text-lng-grey leading-snug mb-2">
-            {video.title}
-          </h1>
-
-          {video.description && (
-            <p className="text-sm text-lng-grey mb-4">{video.description}</p>
-          )}
-
-          <hr className="border-gray-100 my-4" />
-
-          {/* Metadata row */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-lng-grey">
-            <span>{categoryLabel}</span>
-            <span className="text-gray-300 hidden sm:inline">|</span>
-            <span>Uploaded {formatDate(video.created_at)}</span>
+    <div className="flex flex-col h-full flex-1 gap-4">
+      {/* Header Info */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-gray-100 pb-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-bold text-lng-blue uppercase tracking-wider bg-lng-blue/10 px-2 py-0.5 rounded-sm">
+              {categoryLabel}
+            </span>
+            <span className="text-xs text-lng-grey">
+              Uploaded {formatDate(video.created_at)}
+            </span>
           </div>
+          <h1 className="text-lg font-bold text-lng-blue leading-snug">{video.title}</h1>
+          {video.description && (
+            <p className="text-xs text-lng-grey mt-0.5">{video.description}</p>
+          )}
         </div>
+      </div>
+
+      {/* Video Player */}
+      <div
+        className="relative aspect-video rounded-sm overflow-hidden shadow bg-black w-full"
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        <video
+          key={streamUrl}
+          src={streamUrl}
+          className="w-full h-full object-contain"
+          controls
+          disablePictureInPicture
+          controlsList="nodownload"
+          onError={handlePlayerError}
+        />
+
+        {/* Refresh overlay (shown when URL expired mid-playback) */}
+        {isRefreshing && (
+          <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-3 pointer-events-none">
+            <Loader2 className="h-10 w-10 text-white animate-spin" />
+            <p className="text-white text-sm">Refreshing video stream…</p>
+          </div>
+        )}
       </div>
     </div>
   );

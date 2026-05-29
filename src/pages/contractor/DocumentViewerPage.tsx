@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
@@ -8,13 +8,11 @@ import {
   FileSpreadsheet,
   Image,
   File,
-  ExternalLink,
-  Info,
-  CheckCircle,
-  AlertTriangle,
-  AlertCircle,
   ShieldX,
   FileX,
+  AlertCircle,
+  ExternalLink,
+  Download,
 } from 'lucide-react';
 import { getDocument } from '../../api/documents';
 import Spinner from '../../components/ui/Spinner';
@@ -26,19 +24,6 @@ function formatDate(iso: string): string {
   const d = new Date(iso);
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-}
-
-function FileTypeIcon({ blobUrl }: { blobUrl: string }) {
-  const ext = blobUrl.split('?')[0].split('.').pop()?.toLowerCase() ?? '';
-  if (ext === 'pdf')
-    return <FileText className="h-12 w-12 text-lng-red" strokeWidth={1.5} />;
-  if (ext === 'doc' || ext === 'docx')
-    return <FileText className="h-12 w-12 text-lng-blue" strokeWidth={1.5} />;
-  if (ext === 'xls' || ext === 'xlsx')
-    return <FileSpreadsheet className="h-12 w-12 text-green-600" strokeWidth={1.5} />;
-  if (ext === 'jpg' || ext === 'jpeg' || ext === 'png')
-    return <Image className="h-12 w-12 text-purple-600" strokeWidth={1.5} />;
-  return <File className="h-12 w-12 text-lng-grey" strokeWidth={1.5} />;
 }
 
 // ─── Centered state wrapper ───────────────────────────────────────────────────
@@ -57,8 +42,6 @@ export default function DocumentViewerPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [openStatus, setOpenStatus] = useState<'idle' | 'opened' | 'blocked'>('idle');
-
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['contractor-document', id],
     queryFn: () => getDocument(id!),
@@ -75,16 +58,6 @@ export default function DocumentViewerPage() {
       document.title = 'LNG Canada';
     };
   }, [data?.title]);
-
-  // Auto-open document after 500ms when data loads
-  useEffect(() => {
-    if (!data?.document_url) return;
-    const t = setTimeout(() => {
-      const win = window.open(data.document_url!, '_blank', 'noopener,noreferrer');
-      setOpenStatus(win ? 'opened' : 'blocked');
-    }, 500);
-    return () => clearTimeout(t);
-  }, [data?.document_url]);
 
   // ── Loading ──
   if (isLoading) {
@@ -150,107 +123,67 @@ export default function DocumentViewerPage() {
     );
   }
 
-  // ── Document metadata card ──
   const categoryLabel = data.category?.name ?? 'Uncategorized';
 
-  const handleOpen = () => {
-    const win = window.open(data.document_url!, '_blank', 'noopener,noreferrer');
-    setOpenStatus(win ? 'opened' : 'blocked');
-  };
-
   return (
-    <div className="flex flex-col items-center py-8 px-4">
-      {/* Back link */}
-      <div className="w-full max-w-2xl mb-6">
-        <button
-          onClick={() => navigate('/home')}
-          className="inline-flex items-center gap-1.5 text-sm text-lng-blue hover:text-lng-blue/80 transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Home
-        </button>
+    <div className="flex flex-col h-full flex-1 gap-4">
+      {/* Header Info */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-gray-100 pb-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-bold text-lng-red uppercase tracking-wider bg-lng-red/10 px-2 py-0.5 rounded-sm">
+              {categoryLabel}
+            </span>
+            <span className="text-xs text-lng-grey">
+              Uploaded {formatDate(data.created_at)}
+            </span>
+          </div>
+          <h1 className="text-lg font-bold text-lng-blue leading-snug">{data.title}</h1>
+          {data.description && (
+            <p className="text-xs text-lng-grey mt-0.5">{data.description}</p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3">
+          {data.document_url && (
+            <>
+              <a
+                href={data.document_url}
+                download
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-lng-blue transition-colors cursor-pointer"
+                title='Download'
+              >
+                <Download size={16} />
+              </a>
+              <a
+                href={data.document_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-bold text-lng-blue hover:text-lng-blue transition-colors"
+                title='Open in new tab'
+              >
+                <ExternalLink size={16} />
+              </a>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Card */}
-      <div className="relative w-full max-w-2xl bg-white rounded-lg shadow-sm border border-gray-100 p-8 overflow-hidden">
-
-        {/* 54° angle accent — bottom right corner */}
-        <div
-          className="absolute bottom-0 right-0 w-40 h-40 pointer-events-none rounded-br-lg overflow-hidden"
-          aria-hidden="true"
-        >
-          <div
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              right: 0,
-              width: '160px',
-              height: '160px',
-              background:
-                'linear-gradient(54deg, transparent 48%, #D2DCDF 48%, #D2DCDF 52%, transparent 52%)',
-            }}
+      {/* Embed PDF / Document in Iframe */}
+      {data.document_url ? (
+        <div className="flex-1 min-h-[600px] w-full relative bg-gray-50 border border-gray-100 rounded-sm overflow-hidden">
+          <iframe
+            src={`${data.document_url}#toolbar=0`}
+            className="w-full h-full absolute inset-0 border-none bg-white"
+            title={data.title}
           />
         </div>
-
-        {/* File type icon */}
-        <div className="flex justify-center mb-4">
-          <FileTypeIcon blobUrl={data.document_url ?? ''} />
-        </div>
-
-        {/* Title */}
-        <h1 className="text-xl font-bold text-lng-grey text-center leading-snug mb-2">
-          {data.title}
-        </h1>
-
-        {/* Description */}
-        {data.description && (
-          <p className="text-sm text-lng-grey italic text-center line-clamp-3 mb-4">
-            {data.description}
-          </p>
-        )}
-
-        <hr className="border-gray-100 my-5" />
-
-        {/* Metadata row */}
-        <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-sm text-lng-grey">
-          <span>{categoryLabel}</span>
-          <span className="text-gray-300 hidden sm:inline">|</span>
-          <span>Uploaded {formatDate(data.created_at)}</span>
-        </div>
-
-        <hr className="border-gray-100 my-5" />
-
-        {/* Auto-open status notice */}
-        {openStatus === 'opened' && (
-          <div className="flex items-center justify-center gap-2 text-sm text-green-600 mb-4">
-            <CheckCircle className="h-4 w-4 flex-none" />
-            Document opened in a new tab.
-          </div>
-        )}
-        {openStatus === 'blocked' && (
-          <div className="flex items-center justify-center gap-2 text-sm text-lng-orange mb-4">
-            <AlertTriangle className="h-4 w-4 flex-none" />
-            Popup was blocked. Click the button below to open the document.
-          </div>
-        )}
-
-        {/* Open button */}
-        <Button
-          variant="primary"
-          size="lg"
-          className="w-full"
-          onClick={handleOpen}
-        >
-          <ExternalLink className="h-4 w-4" />
-          Open Document
-        </Button>
-
-        {/* Note */}
-        <p className="flex items-center justify-center gap-1.5 text-xs text-lng-grey mt-3">
-          <Info className="h-3.5 w-3.5 flex-none" />
-          Document will open in a new tab.
-        </p>
-      </div>
+      ) : (
+        <CenteredState>
+          <FileX className="h-14 w-14 text-lng-grey" strokeWidth={1.5} />
+          <p className="text-sm text-lng-grey">No document content link is available.</p>
+        </CenteredState>
+      )}
     </div>
   );
 }
