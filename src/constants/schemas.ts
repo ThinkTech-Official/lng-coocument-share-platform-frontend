@@ -5,7 +5,7 @@ export const categorySchema = z
     type: z.enum(['root', 'subcategory', 'childSubcategory']),
     parent_category_id: z.string().nullable(),
     name: z
-      .string()
+      .string().trim()
       .min(2, 'Name must be at least 2 characters')
       .max(100, 'Name is too long'),
     sort_order: z

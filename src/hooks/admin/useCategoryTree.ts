@@ -70,9 +70,14 @@ export function useCategoryTree() {
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((cat) => ({
         ...cat,
-        subcategories: [...(cat.subcategories ?? [])].sort(
-          (a, b) => a.sort_order - b.sort_order,
-        ),
+        subcategories: [...(cat.subcategories ?? [])]
+          .sort((a, b) => a.sort_order - b.sort_order)
+          .map((sub) => ({
+            ...sub,
+            subcategories: [...(sub.subcategories ?? [])].sort(
+              (a, b) => a.sort_order - b.sort_order,
+            ),
+          })),
       }));
   }, [categories]);
 
