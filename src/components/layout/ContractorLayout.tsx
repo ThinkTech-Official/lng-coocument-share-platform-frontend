@@ -297,7 +297,7 @@ export default function ContractorLayout() {
             leftGroups.map((group) => (
               <div
               key={group.id}
-              className="bg-[#fafafa] border border-lng-blue p-4"
+              className="bg-[#fafafa] border-8 border-lng-blue p-4"
             >
               <h3 className="text-xs font-extrabold text-lng-red uppercase tracking-wider mb-2 pb-1 border-b border-gray-200">
                 {group.label}
@@ -448,7 +448,7 @@ export default function ContractorLayout() {
             rightGroups.map((group) => (
               <div
               key={group.id}
-              className="bg-[#fafafa] border border-lng-blue p-4"
+              className="bg-[#fafafa] border-8 border-lng-blue p-4"
             >
               <h3 className="text-xs font-extrabold text-lng-red uppercase tracking-wider mb-2 pb-1 border-b border-gray-200">
                 {group.label}
