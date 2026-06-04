@@ -2,10 +2,10 @@ import { z } from 'zod';
 
 export const categorySchema = z
   .object({
-    type: z.enum(['root', 'subcategory']),
+    type: z.enum(['root', 'subcategory', 'childSubcategory']),
     parent_category_id: z.string().nullable(),
     name: z
-      .string()
+      .string().trim()
       .min(2, 'Name must be at least 2 characters')
       .max(100, 'Name is too long'),
     sort_order: z
@@ -15,7 +15,7 @@ export const categorySchema = z
       .max(999, 'Sort order cannot exceed 999'),
   })
   .superRefine((data, ctx) => {
-    if (data.type === 'subcategory' && !data.parent_category_id) {
+    if ((data.type === 'subcategory' || data.type === 'childSubcategory') && !data.parent_category_id) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'Please select a parent category',

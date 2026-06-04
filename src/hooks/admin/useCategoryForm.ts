@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useController } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -40,9 +40,11 @@ export function useCategoryForm(id?: string) {
   });
 
   // Root categories only for parent dropdown; exclude self in edit mode
-  const rootCategories = allCategories.filter(
-    (c) => c.parent_category_id === null && c.id !== id
-  );
+  const rootCategories = useMemo(() => {
+    return allCategories
+      .filter((c) => c.parent_category_id === null && c.id !== id)
+      .sort((a, b) => a.sort_order - b.sort_order);
+  }, [allCategories, id]);
 
   // ─── Form ─────────────────────────────────────────────────────────────────
 
@@ -56,15 +58,25 @@ export function useCategoryForm(id?: string) {
 
   // Pre-fill form when edit data arrives
   useEffect(() => {
-    if (category) {
+    if (category && allCategories.length > 0) {
+      let resolvedType: 'root' | 'subcategory' | 'childSubcategory' = 'root';
+      if (category.parent_category_id) {
+        const parent = allCategories.find((c) => c.id === category.parent_category_id);
+        if (parent && parent.parent_category_id !== null) {
+          resolvedType = 'childSubcategory';
+        } else {
+          resolvedType = 'subcategory';
+        }
+      }
+
       reset({
-        type: category.parent_category_id ? 'subcategory' : 'root',
+        type: resolvedType,
         parent_category_id: category.parent_category_id,
         name: category.name,
         sort_order: category.sort_order,
       });
     }
-  }, [category, reset]);
+  }, [category, allCategories, reset]);
 
   // ─── Controlled fields ────────────────────────────────────────────────────
 
@@ -77,9 +89,9 @@ export function useCategoryForm(id?: string) {
 
   const watchType = typeField.value;
 
-  const handleTypeChange = (t: 'root' | 'subcategory') => {
+  const handleTypeChange = (t: 'root' | 'subcategory' | 'childSubcategory') => {
     typeField.onChange(t);
-    if (t === 'root') parentField.onChange(null);
+    parentField.onChange(null);
   };
 
   // ─── Mutations ────────────────────────────────────────────────────────────
@@ -89,14 +101,14 @@ export function useCategoryForm(id?: string) {
       createCategory({
         name: vals.name,
         sort_order: vals.sort_order,
-        parent_category_id: vals.type === 'subcategory' ? vals.parent_category_id : null,
+        parent_category_id: vals.type !== 'root' ? vals.parent_category_id : null,
       }),
     onSuccess: (_, vals) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       toast.success(
-        vals.type === 'subcategory'
-          ? 'Subcategory created successfully'
-          : 'Category created successfully'
+        vals.type === 'root'
+          ? 'Category created successfully'
+          : 'Subcategory created successfully'
       );
       navigate('/admin/categories');
     },
@@ -153,6 +165,7 @@ export function useCategoryForm(id?: string) {
     categoryLoading,
     categoryError,
     rootCategories,
+    allCategories,
     form,
     watchType,
     handleTypeChange,
