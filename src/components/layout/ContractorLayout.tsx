@@ -81,6 +81,28 @@ function groupByCategory(items: SidebarItem[]): CategoryGroup[] {
   });
 }
 
+const SidebarSkeleton = () => (
+  <div className="space-y-4">
+    {[1, 2, 3].map((i) => (
+      <div key={i} className="bg-[#fafafa] border border-gray-200 p-4 animate-pulse">
+        <div className="h-4 bg-gray-200 w-1/3 mb-4 rounded-sm"></div>
+        <div className="space-y-3 mb-4">
+          <div className="h-3 bg-gray-200 w-3/4 rounded-sm"></div>
+          <div className="h-3 bg-gray-200 w-5/6 rounded-sm"></div>
+          <div className="h-3 bg-gray-200 w-2/3 rounded-sm"></div>
+        </div>
+        <div className="mt-5">
+          <div className="h-3 bg-gray-200 w-1/4 mb-3 ml-1"></div>
+          <div className="space-y-3 pl-2">
+            <div className="h-3 bg-gray-200 w-4/5 rounded-sm"></div>
+            <div className="h-3 bg-gray-200 w-3/4 rounded-sm"></div>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 export default function ContractorLayout() {
   const { clearAuth } = useAuthStore();
   const navigate = useNavigate();
@@ -104,6 +126,7 @@ export default function ContractorLayout() {
     fetchNextPage: fetchNextDocsPage,
     hasNextPage: hasNextDocsPage,
     isFetchingNextPage: isFetchingNextDocsPage,
+    isLoading: isDocsLoading,
   } = useInfiniteQuery({
     queryKey: ['contractor-documents-infinite'],
     queryFn: ({ pageParam = 1 }) => getDocuments({ limit: 15, page: pageParam }),
@@ -118,6 +141,7 @@ export default function ContractorLayout() {
     fetchNextPage: fetchNextVidsPage,
     hasNextPage: hasNextVidsPage,
     isFetchingNextPage: isFetchingNextVidsPage,
+    isLoading: isVidsLoading,
   } = useInfiniteQuery({
     queryKey: ['contractor-videos-infinite'],
     queryFn: ({ pageParam = 1 }) => getVideos({ limit: 15, page: pageParam, is_live: true }),
@@ -192,6 +216,7 @@ export default function ContractorLayout() {
   }, [hasNextDocsPage, isFetchingNextDocsPage, fetchNextDocsPage, hasNextVidsPage, isFetchingNextVidsPage, fetchNextVidsPage]);
 
   const isFetchingNext = isFetchingNextDocsPage || isFetchingNextVidsPage;
+  const isInitialLoading = isDocsLoading || isVidsLoading;
 
   const linkFor = (item: SidebarItem) =>
     item.type === 'document' ? `/documents/${item.id}` : `/videos/${item.id}`;
@@ -266,8 +291,11 @@ export default function ContractorLayout() {
 
         {/* Left Sidebar */}
         <aside className="lg:col-span-3 order-2 lg:order-1">
-          {leftGroups.map((group) => (
-            <div
+          {isInitialLoading ? (
+            <SidebarSkeleton />
+          ) : (
+            leftGroups.map((group) => (
+              <div
               key={group.id}
               className="bg-[#fafafa] border border-lng-blue p-4"
             >
@@ -285,7 +313,7 @@ export default function ContractorLayout() {
                       <li key={`${item.type}-${item.id}`}>
                         <Link
                           to={to}
-                          className={`block text-xs leading-relaxed transition-colors hover:text-lng-red hover:underline ${isActive ? 'text-lng-red font-bold underline' : 'text-lng-blue'
+                          className={`block text-xs sm:text-sm leading-relaxed transition-colors hover:underline ${isActive ? 'text-lng-red font-bold underline' : 'text-lng-blue'
                             }`}
                         >
                           {item.title}
@@ -310,7 +338,7 @@ export default function ContractorLayout() {
                         <li key={`${item.type}-${item.id}`}>
                           <Link
                             to={to}
-                            className={`block text-xs leading-relaxed transition-colors hover:text-lng-red hover:underline ${isActive ? 'text-lng-red font-bold underline' : 'text-lng-blue'
+                            className={`block text-xs sm:text-sm leading-relaxed transition-colors hover:text-lng-red hover:underline ${isActive ? 'text-lng-red font-bold underline' : 'text-lng-blue'
                               }`}
                           >
                             {item.title}
@@ -322,7 +350,8 @@ export default function ContractorLayout() {
                 </div>
               ))}
             </div>
-          ))}
+            ))
+          )}
           {isFetchingNext && (
             <div className="flex justify-center py-3">
               <Spinner size="sm" />
@@ -413,8 +442,11 @@ export default function ContractorLayout() {
 
         {/* Right Sidebar */}
         <aside className="lg:col-span-3 order-3 lg:order-3">
-          {rightGroups.map((group) => (
-            <div
+          {isInitialLoading ? (
+            <SidebarSkeleton />
+          ) : (
+            rightGroups.map((group) => (
+              <div
               key={group.id}
               className="bg-[#fafafa] border border-lng-blue p-4"
             >
@@ -432,7 +464,7 @@ export default function ContractorLayout() {
                       <li key={`${item.type}-${item.id}`}>
                         <Link
                           to={to}
-                          className={`block text-xs leading-relaxed transition-colors hover:underline ${isActive ? 'text-lng-red font-bold underline' : 'text-lng-blue'
+                          className={`block text-xs sm:text-sm leading-relaxed transition-colors hover:underline ${isActive ? 'text-lng-red font-bold underline' : 'text-lng-blue'
                             }`}
                         >
                           {item.title}
@@ -446,7 +478,7 @@ export default function ContractorLayout() {
               {/* Subcategory groups */}
               {group.subGroups.map((sub) => (
                 <div key={sub.id} className="mt-2">
-                  <h4 className="text-[10px] font-bold text-lng-red-80 uppercase tracking-wider mb-1  pl-1 border-l-2 border-lng-blue">
+                  <h4 className="text-xs font-bold text-lng-red-80 uppercase tracking-wider mb-1  pl-1 border-l-2 border-lng-blue">
                     {sub.label}
                   </h4>
                   <ul className="space-y-1.5 pl-2">
@@ -457,7 +489,7 @@ export default function ContractorLayout() {
                         <li key={`${item.type}-${item.id}`}>
                           <Link
                             to={to}
-                            className={`block text-xs leading-relaxed transition-colors hover:underline ${isActive ? 'text-lng-grey font-bold underline' : 'text-lng-blue'
+                            className={`block text-xs sm:text-sm leading-relaxed transition-colors hover:underline ${isActive ? 'text-lng-grey font-bold underline' : 'text-lng-blue'
                               }`}
                           >
                             {item.title}
@@ -469,7 +501,8 @@ export default function ContractorLayout() {
                 </div>
               ))}
             </div>
-          ))}
+            ))
+          )}
           {isFetchingNext && (
             <div className="flex justify-center py-3">
               <Spinner size="sm" />
