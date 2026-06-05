@@ -25,7 +25,7 @@ export const uploadDocument = (formData: FormData) =>
 
 export const updateDocument = (
   id: string,
-  data: Partial<{ title: string; description: string; category_id: string }>
+  data: Partial<{ title: string; description: string; category_id: string; external_url: string }>
 ) =>
   apiClient.patch<Document>(`/documents/${id}`, data).then((r) => r.data);
 

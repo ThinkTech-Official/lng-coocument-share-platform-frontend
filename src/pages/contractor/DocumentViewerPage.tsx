@@ -13,8 +13,11 @@ import {
   AlertCircle,
   ExternalLink,
   Download,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { getDocument } from '../../api/documents';
+import { getCategoryLabel } from '../../utils/categoryHelpers';
+import { FileType } from '../../types';
 import Spinner from '../../components/ui/Spinner';
 import Button from '../../components/ui/Button';
 
@@ -123,7 +126,8 @@ export default function DocumentViewerPage() {
     );
   }
 
-  const categoryLabel = data.category?.name ?? 'Uncategorized';
+  const categoryLabel = getCategoryLabel(data.category);
+  const isLink = data.file_type === FileType.LINK;
 
   return (
     <div className="flex flex-col h-full flex-1 gap-4">
@@ -134,6 +138,12 @@ export default function DocumentViewerPage() {
             <span className="text-[10px] font-bold text-lng-red uppercase tracking-wider bg-lng-red/10 px-2 py-0.5 rounded-sm">
               {categoryLabel}
             </span>
+            {isLink && (
+              <span className="text-[10px] font-bold text-lng-blue uppercase tracking-wider bg-lng-blue/10 px-2 py-0.5 rounded-sm inline-flex items-center gap-0.5">
+                <LinkIcon size={9} />
+                External
+              </span>
+            )}
             <span className="text-xs text-lng-grey">
               Uploaded {formatDate(data.created_at)}
             </span>
@@ -144,45 +154,73 @@ export default function DocumentViewerPage() {
           )}
         </div>
 
-        <div className="flex items-center gap-3">
-          {data.document_url && (
-            <>
-              <a
-                href={data.document_url}
-                download
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-lng-blue transition-colors cursor-pointer"
-                title='Download'
-              >
-                <Download size={16} />
-              </a>
+        {!isLink && (
+          <div className="flex items-center gap-3">
+            {data.document_url && (
+              <>
+                <a
+                  href={data.document_url}
+                  download
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-lng-blue transition-colors cursor-pointer"
+                  title='Download'
+                >
+                  <Download size={16} />
+                </a>
+                <a
+                  href={data.document_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-lng-blue hover:text-lng-blue transition-colors"
+                  title='Open in new tab'
+                >
+                  <ExternalLink size={16} />
+                </a>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* LINK type: external link card */}
+      {isLink ? (
+        <div className="flex flex-col items-center justify-center flex-1 gap-6 py-12">
+          <div className="flex flex-col items-center gap-3 text-center max-w-sm">
+            <div className="rounded-full bg-lng-blue/10 p-5">
+              <LinkIcon className="h-10 w-10 text-lng-blue" strokeWidth={1.5} />
+            </div>
+            <h2 className="text-base font-bold text-lng-blue">External Document</h2>
+            <p className="text-sm text-lng-grey">
+              This document is hosted externally. Click the button below to open it in a new tab.
+            </p>
+            {data.document_url && (
               <a
                 href={data.document_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-bold text-lng-blue hover:text-lng-blue transition-colors"
-                title='Open in new tab'
+                className="mt-2 inline-flex items-center gap-2 rounded bg-lng-blue px-5 py-2.5 text-sm font-semibold text-white hover:bg-lng-blue/90 transition-colors"
               >
-                <ExternalLink size={16} />
+                <ExternalLink size={15} />
+                Open Document
               </a>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Embed PDF / Document in Iframe */}
-      {data.document_url ? (
-        <div className="flex-1 min-h-[600px] w-full relative bg-gray-50 border border-gray-100 rounded-sm overflow-hidden">
-          <iframe
-            src={`${data.document_url}#toolbar=0`}
-            className="w-full h-full absolute inset-0 border-none bg-white"
-            title={data.title}
-          />
+            )}
+          </div>
         </div>
       ) : (
-        <CenteredState>
-          <FileX className="h-14 w-14 text-lng-grey" strokeWidth={1.5} />
-          <p className="text-sm text-lng-grey">No document content link is available.</p>
-        </CenteredState>
+        /* Embed PDF / Document in Iframe */
+        data.document_url ? (
+          <div className="flex-1 min-h-[600px] w-full relative bg-gray-50 border border-gray-100 rounded-sm overflow-hidden">
+            <iframe
+              src={`${data.document_url}#toolbar=0`}
+              className="w-full h-full absolute inset-0 border-none bg-white"
+              title={data.title}
+            />
+          </div>
+        ) : (
+          <CenteredState>
+            <FileX className="h-14 w-14 text-lng-grey" strokeWidth={1.5} />
+            <p className="text-sm text-lng-grey">No document content link is available.</p>
+          </CenteredState>
+        )
       )}
     </div>
   );

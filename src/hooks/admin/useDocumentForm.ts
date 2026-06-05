@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { type Document, DocumentState, DepartmentAccess } from '../../types';
 import { getCategoriesPublic } from '../../api/categories';
+import { flattenCategories } from '../../utils/categoryHelpers';
 import { getDepartments } from '../../api/departments';
 import { getDocument, updateDocument, updateDocumentStatus, deleteDocument } from '../../api/documents';
 import apiClient from '../../api/axios';
@@ -53,20 +54,20 @@ export function useDocumentForm(id?: string) {
   });
   const departments = deptsResponse?.data ?? [];
 
-  const rootCategories = allCategories
-    .filter((c) => c.parent_category_id === null)
-    .sort((a, b) => a.sort_order - b.sort_order);
+  const flatCategories = flattenCategories(allCategories);
 
   // ─── Form ─────────────────────────────────────────────────────────────────
 
   const uploadForm = useForm<DocumentUploadValues>({
     resolver: zodResolver(documentUploadSchema),
     defaultValues: {
+      docType: 'file',
       title: '',
       description: '',
       category_id: '',
       department_access: 'ALL',
       department_ids: [],
+      external_url: '',
     },
     mode: 'onSubmit',
   });
@@ -231,12 +232,16 @@ export function useDocumentForm(id?: string) {
     if (isEdit) {
       updateDetailsMutation.mutate(data);
     } else {
-      if (!file) {
+      if (data.docType === 'file' && !file) {
         setFileError('Please select a file to upload.');
         return;
       }
       const fd = new FormData();
-      fd.append('file', file);
+      if (data.docType === 'file') {
+        fd.append('file', file!);
+      } else {
+        fd.append('external_url', data.external_url!.trim());
+      }
       fd.append('title', data.title);
       if (data.description) fd.append('description', data.description);
       fd.append('category_id', data.category_id);
@@ -261,7 +266,7 @@ export function useDocumentForm(id?: string) {
     document: docData,
     docLoading,
     docError,
-    rootCategories,
+    flatCategories,
     catsLoading,
     departments,
     deptsLoading,

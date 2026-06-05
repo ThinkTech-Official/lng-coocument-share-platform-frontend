@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useWatch, useController } from 'react-hook-form';
 import {
   ArrowLeft, Upload, FileText, FileSpreadsheet,
-  Image as ImageIcon, X,
+  Image as ImageIcon, X, Link as LinkIcon,
 } from 'lucide-react';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
@@ -44,7 +44,7 @@ function getFileIcon(file: File) {
 
 export default function UploadDocumentPage() {
   const {
-    rootCategories,
+    flatCategories,
     catsLoading,
     departments,
     deptsLoading,
@@ -70,8 +70,10 @@ export default function UploadDocumentPage() {
 
   const { field: accessField } = useController({ name: 'department_access', control });
   const { field: deptIdsField, fieldState: { error: deptIdsError } } = useController({ name: 'department_ids', control });
+  const { field: docTypeField } = useController({ name: 'docType', control });
 
   const watchAccess = accessField.value;
+  const watchDocType = docTypeField.value as 'file' | 'link';
 
   const toggleDepartment = (id: string) => {
     const cur = deptIdsField.value ?? [];
@@ -209,15 +211,10 @@ export default function UploadDocumentPage() {
                       {...register('category_id')}
                     >
                       <option value="">Select a category</option>
-                      {rootCategories.map((root) => (
-                        <optgroup key={root.id} label={root.name}>
-                          <option value={root.id}>{root.name}</option>
-                          {(root.subcategories ?? [])
-                            .sort((a, b) => a.sort_order - b.sort_order)
-                            .map((sub) => (
-                              <option key={sub.id} value={sub.id}>{'  '}› {sub.name}</option>
-                            ))}
-                        </optgroup>
+                      {flatCategories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.level === 0 ? cat.name : cat.level === 1 ? `  › ${cat.name}` : `    › › ${cat.name}`}
+                        </option>
                       ))}
                     </select>
                   )}
@@ -298,87 +295,114 @@ export default function UploadDocumentPage() {
             </div>
           </div>
 
-          {/* ── Right: Upload zone ──────────────────────────────────────── */}
+          {/* ── Right: Upload zone / Link input ────────────────────────── */}
           <div>
             <div className="rounded-lg bg-white p-6 shadow-sm">
-              <div className="mb-6 border-b border-gray-200 pb-4">
-                <h2 className="text-sm font-bold text-lng-grey">Document File</h2>
-              </div>
-
-              {/* Hidden file input */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) validateAndSetFile(f);
-                  e.target.value = '';
-                }}
-              />
-
-              {/* Drop zone */}
-              {!file ? (
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => !isPending && fileInputRef.current?.click()}
-                  onKeyDown={(e) => e.key === 'Enter' && !isPending && fileInputRef.current?.click()}
-                  onDragEnter={handleDragEnter}
-                  onDragLeave={handleDragLeave}
-                  onDragOver={handleDragOver}
-                  onDrop={!isPending ? handleDrop : undefined}
-                  className={`
-                    flex flex-col items-center justify-center rounded-lg border-2 border-dashed
-                    p-8 text-center transition-all duration-200
-                    ${isPending
-                      ? 'pointer-events-none cursor-not-allowed opacity-50'
-                      : 'cursor-pointer'}
-                    ${dragOver
-                      ? 'border-lng-blue bg-lng-blue-20 cursor-copy'
-                      : 'border-lng-blue-40 hover:border-lng-blue hover:bg-lng-blue-20'}
-                  `}
-                >
-                  <Upload size={40} className="mb-3 text-lng-blue-40" />
-                  <p className="mb-1 text-sm font-medium text-lng-grey">
-                    Drag and drop your file here
-                  </p>
-                  <p className="mb-4 text-xs text-gray-400">or click to browse</p>
-                  <p className="text-xs leading-relaxed text-gray-400">
-                    Accepted: PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG
-                  </p>
-                  <p className="text-xs text-gray-400">Max size: 50 MB</p>
-                </div>
-              ) : (
-                /* Selected file display */
-                <div className="flex flex-col items-center gap-3 rounded-lg border border-gray-200 p-6 text-center">
-                  {fileIcon && <fileIcon.Icon size={40} className={fileIcon.cls} />}
-                  <div className="w-full">
-                    <p
-                      className="break-all text-sm font-bold text-lng-grey"
-                      title={file.name}
-                    >
-                      {file.name}
-                    </p>
-                    <p className="mt-1 text-xs text-gray-400">{formatFileSize(file.size)}</p>
-                  </div>
+              <div className="mb-5 border-b border-gray-200 pb-4">
+                <h2 className="text-sm font-bold text-lng-grey mb-3">Document Source</h2>
+                {/* File / Link toggle */}
+                <div className="flex rounded border border-gray-200 overflow-hidden">
                   <button
                     type="button"
-                    title="Remove file"
-                    disabled={isPending}
-                    onClick={() => { setFile(null); setFileError(null); }}
-                    className="flex items-center gap-1.5 text-xs text-lng-red hover:underline disabled:opacity-40"
+                    onClick={() => { docTypeField.onChange('file'); setFile(null); setFileError(null); }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold transition-colors ${watchDocType === 'file' ? 'bg-lng-blue text-white' : 'bg-white text-lng-grey hover:bg-gray-50'}`}
                   >
-                    <X size={13} />
-                    Remove file
+                    <Upload size={12} />
+                    Upload File
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { docTypeField.onChange('link'); setFile(null); setFileError(null); }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold transition-colors ${watchDocType === 'link' ? 'bg-lng-blue text-white' : 'bg-white text-lng-grey hover:bg-gray-50'}`}
+                  >
+                    <LinkIcon size={12} />
+                    Paste Link
                   </button>
                 </div>
-              )}
+              </div>
 
-              {/* File error */}
-              {fileError && (
-                <p className="mt-2 text-xs text-lng-red">{fileError}</p>
+              {watchDocType === 'file' ? (
+                <>
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) validateAndSetFile(f);
+                      e.target.value = '';
+                    }}
+                  />
+
+                  {/* Drop zone */}
+                  {!file ? (
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => !isPending && fileInputRef.current?.click()}
+                      onKeyDown={(e) => e.key === 'Enter' && !isPending && fileInputRef.current?.click()}
+                      onDragEnter={handleDragEnter}
+                      onDragLeave={handleDragLeave}
+                      onDragOver={handleDragOver}
+                      onDrop={!isPending ? handleDrop : undefined}
+                      className={`
+                        flex flex-col items-center justify-center rounded-lg border-2 border-dashed
+                        p-8 text-center transition-all duration-200
+                        ${isPending ? 'pointer-events-none cursor-not-allowed opacity-50' : 'cursor-pointer'}
+                        ${dragOver ? 'border-lng-blue bg-lng-blue-20 cursor-copy' : 'border-lng-blue-40 hover:border-lng-blue hover:bg-lng-blue-20'}
+                      `}
+                    >
+                      <Upload size={40} className="mb-3 text-lng-blue-40" />
+                      <p className="mb-1 text-sm font-medium text-lng-grey">Drag and drop your file here</p>
+                      <p className="mb-4 text-xs text-gray-400">or click to browse</p>
+                      <p className="text-xs leading-relaxed text-gray-400">Accepted: PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG</p>
+                      <p className="text-xs text-gray-400">Max size: 50 MB</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-3 rounded-lg border border-gray-200 p-6 text-center">
+                      {fileIcon && <fileIcon.Icon size={40} className={fileIcon.cls} />}
+                      <div className="w-full">
+                        <p className="break-all text-sm font-bold text-lng-grey" title={file.name}>{file.name}</p>
+                        <p className="mt-1 text-xs text-gray-400">{formatFileSize(file.size)}</p>
+                      </div>
+                      <button
+                        type="button"
+                        title="Remove file"
+                        disabled={isPending}
+                        onClick={() => { setFile(null); setFileError(null); }}
+                        className="flex items-center gap-1.5 text-xs text-lng-red hover:underline disabled:opacity-40"
+                      >
+                        <X size={13} />
+                        Remove file
+                      </button>
+                    </div>
+                  )}
+                  {fileError && <p className="mt-2 text-xs text-lng-red">{fileError}</p>}
+                </>
+              ) : (
+                /* Link input */
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 rounded-lg border border-lng-blue/20 bg-lng-blue/5 px-3 py-2.5">
+                    <LinkIcon size={14} className="shrink-0 text-lng-blue" />
+                    <p className="text-xs text-lng-grey">Paste a URL to an external document. Contractors will be redirected to this link.</p>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm font-medium text-lng-grey" htmlFor="external_url">
+                      External URL <span className="text-lng-red">*</span>
+                    </label>
+                    <input
+                      id="external_url"
+                      type="url"
+                      placeholder="https://example.com/document.pdf"
+                      disabled={isPending}
+                      className={`w-full rounded border px-3 py-2 text-sm text-lng-grey placeholder:text-gray-400 focus:outline-none focus:ring-1 disabled:bg-gray-50 disabled:text-gray-400 ${errors.external_url ? 'border-lng-red focus:border-lng-red focus:ring-lng-red' : 'border-gray-300 focus:border-lng-blue focus:ring-lng-blue'}`}
+                      {...register('external_url')}
+                    />
+                    {errors.external_url && <p className="text-xs text-lng-red">{errors.external_url.message}</p>}
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -412,11 +436,11 @@ export default function UploadDocumentPage() {
             <Button
               type="submit"
               variant="primary"
-              disabled={!file || catsLoading || deptsLoading || isPending}
+              disabled={(watchDocType === 'file' && !file) || catsLoading || deptsLoading || isPending}
               loading={isPending}
             >
-              <Upload size={15} />
-              Upload Document
+              {watchDocType === 'link' ? <LinkIcon size={15} /> : <Upload size={15} />}
+              {watchDocType === 'link' ? 'Add Link Document' : 'Upload Document'}
             </Button>
           )}
         </div>

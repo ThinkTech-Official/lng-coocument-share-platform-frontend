@@ -1,35 +1,48 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
-import { LogOut, FileText, Video, Home, Search, X } from 'lucide-react';
+import { LogOut, FileText, Video, Home, Search, X, ExternalLink } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { getDocuments } from '../../api/documents';
 import { getVideos } from '../../api/videos';
 import Spinner from '../ui/Spinner';
 
-// Unified sidebar item type
 type SidebarItem = {
   id: string;
   title: string;
   type: 'document' | 'video';
+  file_type?: string | null;
   category?: {
     id: string;
     name: string;
     parent_category_id: string | null;
-    parent?: { id: string; name: string } | null;
+    parent?: {
+      id: string;
+      name: string;
+      parent_category_id: string | null;
+      parent?: { id: string; name: string } | null;
+    } | null;
   } | null;
 };
-type SubGroup = {
+
+type ChildGroup = {
   id: string;
   label: string;
   items: SidebarItem[];
 };
 
+type SubGroup = {
+  id: string;
+  label: string;
+  items: SidebarItem[];
+  childGroups: ChildGroup[];
+};
+
 type CategoryGroup = {
   id: string;
   label: string;
-  subGroups: SubGroup[]; // subcategories (may be empty if items are directly in root)
-  items: SidebarItem[];  // items directly in root (no subcategory)
+  subGroups: SubGroup[];
+  items: SidebarItem[];
 };
 
 function groupByCategory(items: SidebarItem[]): CategoryGroup[] {
@@ -46,27 +59,52 @@ function groupByCategory(items: SidebarItem[]): CategoryGroup[] {
 
     const cat = item.category;
 
-    if (cat.parent_category_id && cat.parent) {
-      // This item belongs to a SUBCATEGORY
+    if (!cat.parent_category_id) {
+      // Level 0: item directly in a root category
+      if (!groups[cat.id]) {
+        groups[cat.id] = { id: cat.id, label: cat.name, subGroups: [], items: [] };
+      }
+      groups[cat.id].items.push(item);
+    } else if (cat.parent && !cat.parent.parent_category_id) {
+      // Level 1: subcategory — parent is a root
       const rootId = cat.parent.id;
       const rootName = cat.parent.name;
+      if (!groups[rootId]) {
+        groups[rootId] = { id: rootId, label: rootName, subGroups: [], items: [] };
+      }
+      let subGroup = groups[rootId].subGroups.find((sg) => sg.id === cat.id);
+      if (!subGroup) {
+        subGroup = { id: cat.id, label: cat.name, items: [], childGroups: [] };
+        groups[rootId].subGroups.push(subGroup);
+      }
+      subGroup.items.push(item);
+    } else if (cat.parent?.parent) {
+      // Level 2: child subcategory — grandparent is root, parent is subcategory
+      const rootId = cat.parent.parent.id;
+      const rootName = cat.parent.parent.name;
+      const subId = cat.parent.id;
+      const subName = cat.parent.name;
+      const childId = cat.id;
+      const childName = cat.name;
 
       if (!groups[rootId]) {
         groups[rootId] = { id: rootId, label: rootName, subGroups: [], items: [] };
       }
-
-      // Find or create the subgroup
-      let subGroup = groups[rootId].subGroups.find((sg) => sg.id === cat.id);
+      let subGroup = groups[rootId].subGroups.find((sg) => sg.id === subId);
       if (!subGroup) {
-        subGroup = { id: cat.id, label: cat.name, items: [] };
+        subGroup = { id: subId, label: subName, items: [], childGroups: [] };
         groups[rootId].subGroups.push(subGroup);
       }
-      subGroup.items.push(item);
+      let childGroup = subGroup.childGroups.find((cg) => cg.id === childId);
+      if (!childGroup) {
+        childGroup = { id: childId, label: childName, items: [] };
+        subGroup.childGroups.push(childGroup);
+      }
+      childGroup.items.push(item);
     } else {
-      // This item belongs directly to a ROOT category
-      const rootId = cat.id;
-      const rootName = cat.name;
-
+      // Fallback: treat parent as root
+      const rootId = cat.parent?.id ?? cat.id;
+      const rootName = cat.parent?.name ?? cat.name;
       if (!groups[rootId]) {
         groups[rootId] = { id: rootId, label: rootName, subGroups: [], items: [] };
       }
@@ -155,8 +193,8 @@ export default function ContractorLayout() {
 
   // Merge docs and videos into a single unified list
   const allItems: SidebarItem[] = [
-    ...documents.map((d) => ({ id: d.id, title: d.title, type: 'document' as const, category: d.category })),
-    ...videos.map((v) => ({ id: v.id, title: v.title, type: 'video' as const, category: v.category })),
+    ...documents.map((d) => ({ id: d.id, title: d.title, type: 'document' as const, file_type: d.file_type ?? null, category: d.category })),
+    ...videos.map((v) => ({ id: v.id, title: v.title, type: 'video' as const, file_type: null, category: v.category })),
   ];
 
   const grouped = groupByCategory(allItems);
@@ -164,9 +202,7 @@ export default function ContractorLayout() {
   // Split into left/right columns
   const halfIndex = Math.ceil(grouped.length / 2);
   const leftGroups = grouped.slice(0, halfIndex);
-  console.log("leftGroups", leftGroups);
   const rightGroups = grouped.slice(halfIndex);
-  console.log("rightGroups", rightGroups);
 
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
@@ -194,8 +230,8 @@ export default function ContractorLayout() {
 
   // Merge search results into unified list
   const searchResults: SidebarItem[] = [
-    ...searchDocs.map((d) => ({ id: d.id, title: d.title, type: 'document' as const, category: d.category, description: d.description })),
-    ...searchVids.map((v) => ({ id: v.id, title: v.title, type: 'video' as const, category: v.category, description: v.description })),
+    ...searchDocs.map((d) => ({ id: d.id, title: d.title, type: 'document' as const, file_type: d.file_type ?? null, category: d.category })),
+    ...searchVids.map((v) => ({ id: v.id, title: v.title, type: 'video' as const, file_type: null, category: v.category })),
   ];
 
   // Window scroll listener for sidebar infinite scrolling — load both
@@ -218,8 +254,90 @@ export default function ContractorLayout() {
   const isFetchingNext = isFetchingNextDocsPage || isFetchingNextVidsPage;
   const isInitialLoading = isDocsLoading || isVidsLoading;
 
+  const isLinkDoc = (item: SidebarItem) => item.type === 'document' && item.file_type === 'LINK';
   const linkFor = (item: SidebarItem) =>
     item.type === 'document' ? `/documents/${item.id}` : `/videos/${item.id}`;
+
+  function renderSidebarItem(item: SidebarItem) {
+    const to = linkFor(item);
+    const isActive = location.pathname === to;
+    const isLink = isLinkDoc(item);
+
+    if (isLink) {
+      return (
+        <li key={`${item.type}-${item.id}`}>
+          <Link
+            to={to}
+            className="flex items-center gap-1 text-xs leading-relaxed transition-colors hover:underline text-lng-blue w-full text-left"
+          >
+            {item.title}
+            <ExternalLink size={10} className="shrink-0 opacity-60" />
+          </Link>
+        </li>
+      );
+    }
+
+    return (
+      <li key={`${item.type}-${item.id}`}>
+        <Link
+          to={to}
+          className={`block text-xs leading-relaxed transition-colors hover:underline ${
+            isActive ? 'text-lng-red font-bold underline' : 'text-lng-blue'
+          }`}
+        >
+          {item.title}
+        </Link>
+      </li>
+    );
+  }
+
+  function renderGroupSidebar(group: CategoryGroup) {
+    return (
+      <div
+        key={group.id}
+        className="bg-[#fafafa] border-8 border-lng-blue p-4"
+      >
+        <h3 className="text-xs font-extrabold text-lng-red uppercase tracking-wider mb-2 pb-1 border-b border-gray-200">
+          {group.label}
+        </h3>
+
+        {/* Items directly under root category (no subcategory) */}
+        {group.items.length > 0 && (
+          <ul className="space-y-1.5 mb-2">
+            {group.items.map((item) => renderSidebarItem(item))}
+          </ul>
+        )}
+
+        {/* Subcategory groups */}
+        {group.subGroups.map((sub) => (
+          <div key={sub.id} className="mt-2">
+            <h4 className="text-[10px] font-bold text-lng-red uppercase tracking-wider mb-1 pl-1 border-l-2 border-lng-blue">
+              {sub.label}
+            </h4>
+
+            {/* Items directly in this subcategory */}
+            {sub.items.length > 0 && (
+              <ul className="space-y-1.5 pl-2">
+                {sub.items.map((item) => renderSidebarItem(item))}
+              </ul>
+            )}
+
+            {/* Child subcategory groups */}
+            {sub.childGroups.map((child) => (
+              <div key={child.id} className="mt-1.5 pl-2">
+                <h5 className="text-[9px] font-bold text-lng-grey uppercase tracking-wider mb-1 pl-1 border-l border-lng-blue-40">
+                  {child.label}
+                </h5>
+                <ul className="space-y-1.5 pl-2">
+                  {child.items.map((item) => renderSidebarItem(item))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white font-sans flex flex-col">
@@ -294,63 +412,7 @@ export default function ContractorLayout() {
           {isInitialLoading ? (
             <SidebarSkeleton />
           ) : (
-            leftGroups.map((group) => (
-              <div
-              key={group.id}
-              className="bg-[#fafafa] border-8 border-lng-blue p-4"
-            >
-              <h3 className="text-xs font-extrabold text-lng-red uppercase tracking-wider mb-2 pb-1 border-b border-gray-200">
-                {group.label}
-              </h3>
-
-              {/* Items directly under root category (no subcategory) */}
-              {group.items.length > 0 && (
-                <ul className="space-y-1.5 mb-2">
-                  {group.items.map((item) => {
-                    const to = linkFor(item);
-                    const isActive = location.pathname === to;
-                    return (
-                      <li key={`${item.type}-${item.id}`}>
-                        <Link
-                          to={to}
-                          className={`block text-xs sm:text-sm leading-relaxed transition-colors hover:underline ${isActive ? 'text-lng-red font-bold underline' : 'text-lng-blue'
-                            }`}
-                        >
-                          {item.title}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-
-              {/* Subcategory groups */}
-              {group.subGroups.map((sub) => (
-                <div key={sub.id} className="mt-2">
-                  <h4 className="text-[10px] font-bold text-lng-grey uppercase tracking-wider mb-1 pl-1 border-l-2 border-lng-blue">
-                    {sub.label}
-                  </h4>
-                  <ul className="space-y-1.5 pl-2">
-                    {sub.items.map((item) => {
-                      const to = linkFor(item);
-                      const isActive = location.pathname === to;
-                      return (
-                        <li key={`${item.type}-${item.id}`}>
-                          <Link
-                            to={to}
-                            className={`block text-xs sm:text-sm leading-relaxed transition-colors hover:text-lng-red hover:underline ${isActive ? 'text-lng-red font-bold underline' : 'text-lng-blue'
-                              }`}
-                          >
-                            {item.title}
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              ))}
-            </div>
-            ))
+            leftGroups.map((group) => renderGroupSidebar(group))
           )}
           {isFetchingNext && (
             <div className="flex justify-center py-3">
@@ -392,6 +454,38 @@ export default function ContractorLayout() {
                   searchResults.map((item) => {
                     const to = linkFor(item);
                     const isVideo = item.type === 'video';
+                    const itemIsLink = isLinkDoc(item);
+                    const cardContent = (
+                      <div className="flex items-start gap-2.5">
+                        <div className={`p-1.5 rounded-sm transition-colors mt-0.5 ${isVideo
+                            ? 'bg-lng-orange/10 text-lng-orange group-hover:bg-lng-orange group-hover:text-white'
+                            : 'bg-lng-blue/10 text-lng-blue group-hover:bg-lng-blue group-hover:text-white'
+                          }`}>
+                          {isVideo ? <Video size={14} /> : <FileText size={14} />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`text-xs font-bold text-gray-800 transition-colors ${isVideo ? 'group-hover:text-lng-orange' : 'group-hover:text-lng-blue'}`}>
+                              {item.title}
+                            </span>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${isVideo ? 'text-lng-orange bg-lng-orange/10' : 'text-lng-blue bg-lng-blue/10'}`}>
+                              {isVideo ? 'Video' : 'Document'}
+                            </span>
+                            {itemIsLink && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm uppercase tracking-wider text-lng-blue bg-lng-blue/10 inline-flex items-center gap-0.5">
+                                <ExternalLink size={8} />
+                                External
+                              </span>
+                            )}
+                            {item.category?.name && (
+                              <span className="text-[9px] font-bold text-lng-red bg-lng-red/10 px-1.5 py-0.5 rounded-sm uppercase tracking-wider">
+                                {item.category.name}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
                     return (
                       <Link
                         key={`${item.type}-${item.id}`}
@@ -402,33 +496,7 @@ export default function ContractorLayout() {
                             : 'hover:border-lng-blue/40 hover:bg-lng-blue/5'
                           }`}
                       >
-                        <div className="flex items-start gap-2.5">
-                          <div className={`p-1.5 rounded-sm transition-colors mt-0.5 ${isVideo
-                              ? 'bg-lng-orange/10 text-lng-orange group-hover:bg-lng-orange group-hover:text-white'
-                              : 'bg-lng-blue/10 text-lng-blue group-hover:bg-lng-blue group-hover:text-white'
-                            }`}>
-                            {isVideo ? <Video size={14} /> : <FileText size={14} />}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className={`text-xs font-bold text-gray-800 transition-colors ${isVideo ? 'group-hover:text-lng-orange' : 'group-hover:text-lng-blue'
-                                }`}>
-                                {item.title}
-                              </span>
-                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${isVideo
-                                  ? 'text-lng-orange bg-lng-orange/10'
-                                  : 'text-lng-blue bg-lng-blue/10'
-                                }`}>
-                                {isVideo ? 'Video' : 'Document'}
-                              </span>
-                              {item.category?.name && (
-                                <span className="text-[9px] font-bold text-lng-red bg-lng-red/10 px-1.5 py-0.5 rounded-sm uppercase tracking-wider">
-                                  {item.category.name}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
+                        {cardContent}
                       </Link>
                     );
                   })
@@ -445,63 +513,7 @@ export default function ContractorLayout() {
           {isInitialLoading ? (
             <SidebarSkeleton />
           ) : (
-            rightGroups.map((group) => (
-              <div
-              key={group.id}
-              className="bg-[#fafafa] border-8 border-lng-blue p-4"
-            >
-              <h3 className="text-xs font-extrabold text-lng-red uppercase tracking-wider mb-2 pb-1 border-b border-gray-200">
-                {group.label}
-              </h3>
-
-              {/* Items directly under root category (no subcategory) */}
-              {group.items.length > 0 && (
-                <ul className="space-y-1.5 mb-2">
-                  {group.items.map((item) => {
-                    const to = linkFor(item);
-                    const isActive = location.pathname === to;
-                    return (
-                      <li key={`${item.type}-${item.id}`}>
-                        <Link
-                          to={to}
-                          className={`block text-xs sm:text-sm leading-relaxed transition-colors hover:underline ${isActive ? 'text-lng-red font-bold underline' : 'text-lng-blue'
-                            }`}
-                        >
-                          {item.title}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-
-              {/* Subcategory groups */}
-              {group.subGroups.map((sub) => (
-                <div key={sub.id} className="mt-2">
-                  <h4 className="text-xs font-bold text-lng-red-80 uppercase tracking-wider mb-1  pl-1 border-l-2 border-lng-blue">
-                    {sub.label}
-                  </h4>
-                  <ul className="space-y-1.5 pl-2">
-                    {sub.items.map((item) => {
-                      const to = linkFor(item);
-                      const isActive = location.pathname === to;
-                      return (
-                        <li key={`${item.type}-${item.id}`}>
-                          <Link
-                            to={to}
-                            className={`block text-xs sm:text-sm leading-relaxed transition-colors hover:underline ${isActive ? 'text-lng-grey font-bold underline' : 'text-lng-blue'
-                              }`}
-                          >
-                            {item.title}
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              ))}
-            </div>
-            ))
+            rightGroups.map((group) => renderGroupSidebar(group))
           )}
           {isFetchingNext && (
             <div className="flex justify-center py-3">

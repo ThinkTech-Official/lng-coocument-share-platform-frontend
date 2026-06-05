@@ -16,11 +16,13 @@ export interface ContractorEditValues {
 }
 
 export interface DocumentUploadValues {
+  docType: 'file' | 'link';
   title: string;
   description: string;
   category_id: string;
   department_access: 'ALL' | 'RESTRICTED';
   department_ids: string[];
+  external_url?: string;
 }
 
 export interface DocumentEditValues {

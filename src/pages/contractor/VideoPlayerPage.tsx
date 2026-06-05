@@ -10,6 +10,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { getVideo, getVideoStream } from '../../api/videos';
+import { getCategoryLabel } from '../../utils/categoryHelpers';
 import Button from '../../components/ui/Button';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -182,7 +183,7 @@ export default function VideoPlayerPage() {
   // ── Success ──
   const video = videoQuery.data!;
   const streamUrl = streamQuery.data!.stream_url;
-  const categoryLabel = video.category?.name ?? 'Uncategorized';
+  const categoryLabel = getCategoryLabel(video.category);
 
   return (
     <div className="flex flex-col h-full flex-1 gap-4">

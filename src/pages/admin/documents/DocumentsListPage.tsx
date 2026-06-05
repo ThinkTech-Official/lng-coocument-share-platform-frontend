@@ -5,14 +5,15 @@ import {
 } from '@tanstack/react-query';
 import {
   Upload, Search, Pencil, Send, EyeOff, Trash2,
-  AlertCircle, FileText, X,
+  AlertCircle, FileText, X, Link as LinkIcon,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { type Document, type Category, type DocumentState } from '../../../types';
+import { type Document, type DocumentState, FileType } from '../../../types';
 import {
   getDocuments, updateDocumentStatus, deleteDocument,
 } from '../../../api/documents';
 import { getCategoriesPublic } from '../../../api/categories';
+import { getCategoryLabel, flattenCategories } from '../../../utils/categoryHelpers';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import Badge from '../../../components/ui/Badge';
@@ -26,14 +27,6 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-GB', {
     day: '2-digit', month: 'short', year: 'numeric',
   });
-}
-
-function getCategoryLabel(doc: Document, allCats: Category[]): string {
-  if (!doc.category) return 'Uncategorized';
-  const cat = doc.category;
-  if (!cat.parent_category_id) return cat.name;
-  const parent = allCats.find((c) => c.id === cat.parent_category_id);
-  return parent ? `${parent.name} > ${cat.name}` : cat.name;
 }
 
 // ─── Skeleton row ─────────────────────────────────────────────────────────────
@@ -173,13 +166,7 @@ export default function DocumentsListPage() {
     queryFn: getCategoriesPublic,
   });
 
-  // Root categories for the filter dropdown
-  const rootCategories = useMemo(
-    () => [...allCategories]
-      .filter((c) => c.parent_category_id === null)
-      .sort((a, b) => a.sort_order - b.sort_order),
-    [allCategories],
-  );
+  const flatCategories = useMemo(() => flattenCategories(allCategories), [allCategories]);
 
   const filteredDocuments = documents;
 
@@ -355,17 +342,10 @@ export default function DocumentsListPage() {
             className="rounded border border-gray-300 px-3 py-1.5 text-sm text-lng-grey focus:border-lng-blue focus:outline-none focus:ring-1 focus:ring-lng-blue"
           >
             <option value="">All Categories</option>
-            {rootCategories.map((root) => (
-              <optgroup key={root.id} label={root.name}>
-                <option value={root.id}>{root.name}</option>
-                {(root.subcategories ?? [])
-                  .sort((a, b) => a.sort_order - b.sort_order)
-                  .map((sub) => (
-                    <option key={sub.id} value={sub.id}>
-                      {'  '}› {sub.name}
-                    </option>
-                  ))}
-              </optgroup>
+            {flatCategories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.level === 0 ? cat.name : cat.level === 1 ? `  › ${cat.name}` : `    › › ${cat.name}`}
+              </option>
             ))}
           </select>
 
@@ -519,7 +499,7 @@ export default function DocumentsListPage() {
               {filteredDocuments.map((doc) => {
                 const isPending = pendingIds.has(doc.id) || bulkPending;
                 const isSelected = selectedIds.has(doc.id);
-                const catLabel = getCategoryLabel(doc, allCategories);
+                const catLabel = getCategoryLabel(doc.category);
 
                 return (
                   <tr
@@ -540,12 +520,17 @@ export default function DocumentsListPage() {
 
                     {/* Title */}
                     <td className="px-4 py-3 max-w-xs">
-                      <span
-                        className="block truncate font-bold text-lng-grey"
-                        title={doc.title}
-                      >
-                        {doc.title}
-                      </span>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="truncate font-bold text-lng-grey" title={doc.title}>
+                          {doc.title}
+                        </span>
+                        {doc.file_type === FileType.LINK && (
+                          <span className="shrink-0 inline-flex items-center gap-0.5 text-[10px] font-bold text-lng-blue bg-lng-blue/10 px-1.5 py-0.5 rounded-sm uppercase tracking-wider">
+                            <LinkIcon size={10} />
+                            Link
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Category */}

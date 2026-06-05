@@ -61,12 +61,8 @@ export function useCategoryForm(id?: string) {
     if (category && allCategories.length > 0) {
       let resolvedType: 'root' | 'subcategory' | 'childSubcategory' = 'root';
       if (category.parent_category_id) {
-        const parent = allCategories.find((c) => c.id === category.parent_category_id);
-        if (parent && parent.parent_category_id !== null) {
-          resolvedType = 'childSubcategory';
-        } else {
-          resolvedType = 'subcategory';
-        }
+        const isParentRoot = allCategories.some((c) => c.id === category.parent_category_id);
+        resolvedType = isParentRoot ? 'subcategory' : 'childSubcategory';
       }
 
       reset({

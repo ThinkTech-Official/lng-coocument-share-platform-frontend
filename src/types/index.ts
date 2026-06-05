@@ -30,6 +30,15 @@ export const VideoState = {
 } as const;
 export type VideoState = (typeof VideoState)[keyof typeof VideoState];
 
+export const FileType = {
+  PDF:   'PDF',
+  DOC:   'DOC',
+  EXCEL: 'EXCEL',
+  IMAGE: 'IMAGE',
+  LINK:  'LINK',
+} as const;
+export type FileType = (typeof FileType)[keyof typeof FileType];
+
 export const DepartmentAccess = {
   ALL: 'ALL',
   RESTRICTED: 'RESTRICTED',
@@ -50,7 +59,12 @@ export interface Category {
   id: string;
   name: string;
   parent_category_id: string | null;
-  parent?: { id: string; name: string } | null;
+  parent?: {
+    id: string;
+    name: string;
+    parent_category_id: string | null;
+    parent?: { id: string; name: string } | null;
+  } | null;
   sort_order: number;
   created_at: string;
   deleted_at: string | null;
@@ -89,6 +103,7 @@ export interface Document {
     department: { id: string; name: string };
   }>;
   state: DocumentState;
+  file_type?: FileType;
   document_url?: string;
   created_at: string;
   updated_at: string;

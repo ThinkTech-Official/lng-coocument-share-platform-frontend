@@ -156,7 +156,7 @@ export default function ForceResetPasswordPage() {
   const [submitted, setSubmitted]     = useState(false);
 
   const navigate          = useNavigate();
-  const { user, token, setAuth, clearAuth } = useAuthStore();
+  const { user, setAuth, clearAuth } = useAuthStore();
 
   // Block SPA navigation to anywhere except /login (logout path)
   const blocker = useBlocker(
@@ -196,7 +196,7 @@ export default function ForceResetPasswordPage() {
 
     onSuccess: () => {
       if (user) {
-        setAuth({ ...user, force_password_reset: false }, token ?? '');
+        setAuth({ ...user, force_password_reset: false });
       }
       toast.success('Password updated successfully');
       navigate(dashboardFor(user?.role ?? ''), { replace: true });

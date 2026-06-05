@@ -9,7 +9,7 @@ export type SortedCategory = Omit<Category, 'subcategories'> & { subcategories: 
 interface DeleteTarget {
   id: string;
   name: string;
-  isRoot: boolean;
+  level: 'root' | 'sub' | 'child';
 }
 
 export function useCategoryTree() {
@@ -51,10 +51,16 @@ export function useCategoryTree() {
   // ─── Delete mutation ────────────────────────────────────────────────────────
 
   const deleteMutation = useMutation({
-    mutationFn: ({ id }: { id: string; isRoot: boolean }) => deleteCategory(id),
-    onSuccess: (_, { isRoot }) => {
+    mutationFn: ({ id }: { id: string; level: 'root' | 'sub' | 'child' }) => deleteCategory(id),
+    onSuccess: (_, { level }) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast.success(isRoot ? 'Category and subcategories deleted' : 'Subcategory deleted');
+      toast.success(
+        level === 'root'
+          ? 'Category and subcategories deleted'
+          : level === 'sub'
+          ? 'Subcategory deleted'
+          : 'Child subcategory deleted'
+      );
       setDeleteTarget(null);
     },
     onError: () => {

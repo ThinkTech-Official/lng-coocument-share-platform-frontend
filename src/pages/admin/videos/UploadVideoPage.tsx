@@ -26,7 +26,7 @@ function formatDuration(seconds: number): string {
 
 export default function UploadVideoPage() {
   const {
-    rootCategories,
+    flatCategories,
     catsLoading,
     departments,
     deptsLoading,
@@ -207,15 +207,10 @@ export default function UploadVideoPage() {
                       {...register('category_id')}
                     >
                       <option value="">Select a category</option>
-                      {rootCategories.map((root) => (
-                        <optgroup key={root.id} label={root.name}>
-                          <option value={root.id}>{root.name}</option>
-                          {(root.subcategories ?? [])
-                            .sort((a, b) => a.sort_order - b.sort_order)
-                            .map((sub) => (
-                              <option key={sub.id} value={sub.id}>{'  '}› {sub.name}</option>
-                            ))}
-                        </optgroup>
+                      {flatCategories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.level === 0 ? cat.name : cat.level === 1 ? `  › ${cat.name}` : `    › › ${cat.name}`}
+                        </option>
                       ))}
                     </select>
                   )}

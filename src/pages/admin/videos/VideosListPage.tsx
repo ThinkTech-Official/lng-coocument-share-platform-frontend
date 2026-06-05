@@ -8,9 +8,10 @@ import {
   AlertCircle, Video as VideoIcon, X, Radio, Loader2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { type Video, type Category, VideoUploadStatus, type PaginatedResponse } from '../../../types';
+import { type Video, VideoUploadStatus, type PaginatedResponse } from '../../../types';
 import { getVideos, updateVideoStatus, deleteVideo } from '../../../api/videos';
 import { getCategoriesPublic } from '../../../api/categories';
+import { getCategoryLabel, flattenCategories } from '../../../utils/categoryHelpers';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import Badge from '../../../components/ui/Badge';
@@ -25,14 +26,6 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-GB', {
     day: '2-digit', month: 'short', year: 'numeric',
   });
-}
-
-function getCategoryLabel(video: Video, allCats: Category[]): string {
-  if (!video.category) return 'Uncategorized';
-  const cat = video.category;
-  if (!cat.parent_category_id) return cat.name;
-  const parent = allCats.find((c) => c.id === cat.parent_category_id);
-  return parent ? `${parent.name} > ${cat.name}` : cat.name;
 }
 
 // ─── Skeleton card ────────────────────────────────────────────────────────────
@@ -63,7 +56,6 @@ function SkeletonCard() {
 
 interface VideoCardProps {
   video: Video;
-  allCategories: Category[];
   isPending: boolean;
   onGoLive: (v: Video) => void;
   onTakeOffline: (v: Video) => void;
@@ -72,7 +64,6 @@ interface VideoCardProps {
 
 function VideoCard({
   video,
-  allCategories,
   isPending,
   onGoLive,
   onTakeOffline,
@@ -84,7 +75,7 @@ function VideoCard({
   const isFailed    = video.upload_status === VideoUploadStatus.FAILED;
   const isUploading = video.upload_status === VideoUploadStatus.UPLOADING;
   const isReady     = video.upload_status === VideoUploadStatus.READY;
-  const catLabel    = getCategoryLabel(video, allCategories);
+  const catLabel    = getCategoryLabel(video.category);
   const isUncategorized = !video.category;
 
   return (
@@ -348,13 +339,7 @@ export default function VideosListPage() {
     queryFn:  getCategoriesPublic,
   });
 
-  const rootCategories = useMemo(
-    () =>
-      [...allCategories]
-        .filter((c) => c.parent_category_id === null)
-        .sort((a, b) => a.sort_order - b.sort_order),
-    [allCategories],
-  );
+  const flatCategories = useMemo(() => flattenCategories(allCategories), [allCategories]);
 
   const filteredVideos = videos;
 
@@ -457,17 +442,10 @@ export default function VideosListPage() {
             className="rounded border border-gray-300 px-3 py-1.5 text-sm text-lng-grey focus:border-lng-blue focus:outline-none focus:ring-1 focus:ring-lng-blue"
           >
             <option value="">All Categories</option>
-            {rootCategories.map((root) => (
-              <optgroup key={root.id} label={root.name}>
-                <option value={root.id}>{root.name}</option>
-                {(root.subcategories ?? [])
-                  .sort((a, b) => a.sort_order - b.sort_order)
-                  .map((sub) => (
-                    <option key={sub.id} value={sub.id}>
-                      {'  '}› {sub.name}
-                    </option>
-                  ))}
-              </optgroup>
+            {flatCategories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.level === 0 ? cat.name : cat.level === 1 ? `  › ${cat.name}` : `    › › ${cat.name}`}
+              </option>
             ))}
           </select>
 
@@ -553,7 +531,6 @@ export default function VideosListPage() {
               <VideoCard
                 key={video.id}
                 video={video}
-                allCategories={allCategories}
                 isPending={pendingIds.has(video.id)}
                 onGoLive={handleGoLive}
                 onTakeOffline={handleTakeOffline}
