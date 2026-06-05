@@ -120,6 +120,7 @@ export default function VideoDetailPage() {
     deptsDirty,
     isPending,
     onSubmit,
+    updateDetailsMutation,
     statusMutation,
     deptsMutation,
     deleteMutation,
@@ -330,7 +331,7 @@ export default function VideoDetailPage() {
                   type="submit"
                   variant="primary"
                   disabled={!isDirty || isPending}
-                  loading={isPending && !statusMutation.isPending && !deptsMutation.isPending && !deleteMutation.isPending}
+                  loading={updateDetailsMutation.isPending}
                 >
                   <Save size={14} />
                   Update Details
@@ -494,8 +495,9 @@ export default function VideoDetailPage() {
         open={showOfflineConfirm}
         onClose={() => !statusMutation.isPending && setShowOfflineConfirm(false)}
         onConfirm={() => {
-          statusMutation.mutate(VideoState.UNPUBLISHED);
-          setShowOfflineConfirm(false);
+          statusMutation.mutate(VideoState.UNPUBLISHED, {
+            onSuccess: () => setShowOfflineConfirm(false),
+          });
         }}
         loading={statusMutation.isPending}
         title="Take Video Offline"

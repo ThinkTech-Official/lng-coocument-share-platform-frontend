@@ -100,6 +100,7 @@ export default function DocumentDetailPage() {
     deptsDirty,
     isPending,
     onSubmit,
+    updateDetailsMutation,
     reuploadMutation,
     statusMutation,
     deptsMutation,
@@ -345,7 +346,7 @@ export default function DocumentDetailPage() {
                   type="submit"
                   variant="primary"
                   disabled={!isDirty || isPending}
-                  loading={isPending}
+                  loading={updateDetailsMutation.isPending}
                 >
                   <Save size={14} />
                   Save Changes
@@ -549,7 +550,9 @@ export default function DocumentDetailPage() {
       <ConfirmDialog
         open={showUnpublishConfirm}
         onClose={() => setShowUnpublishConfirm(false)}
-        onConfirm={() => statusMutation.mutate(DocumentState.UNPUBLISHED)}
+        onConfirm={() => statusMutation.mutate(DocumentState.UNPUBLISHED, {
+          onSuccess: () => setShowUnpublishConfirm(false),
+        })}
         title="Unpublish Document"
         message="Contractors will no longer be able to view this document."
         confirmLabel="Unpublish"

@@ -205,6 +205,8 @@ export function useContractorForm(id?: string) {
     isPending,
     onSubmit,
     handleSaveDepts,
+    updateMutation,
+    deptMutation,
     statusMutation,
     deleteMutation,
     navigate,

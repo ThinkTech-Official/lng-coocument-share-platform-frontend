@@ -40,6 +40,8 @@ export default function ContractorDetailPage() {
     isPending,
     onSubmit,
     handleSaveDepts,
+    updateMutation,
+    deptMutation,
     statusMutation,
     deleteMutation,
     navigate,
@@ -168,7 +170,7 @@ export default function ContractorDetailPage() {
                 <Button
                   type="submit"
                   variant="primary"
-                  loading={isPending}
+                  loading={updateMutation.isPending}
                   disabled={!isDirty || isPending}
                 >
                   <Save size={14} />
@@ -235,7 +237,7 @@ export default function ContractorDetailPage() {
                   type="button"
                   variant="primary"
                   className="w-full justify-center"
-                  loading={isPending}
+                  loading={deptMutation.isPending}
                   disabled={!deptsChanged || isPending}
                   onClick={handleSaveDepts}
                 >

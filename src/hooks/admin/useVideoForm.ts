@@ -345,6 +345,7 @@ export function useVideoForm(id?: string) {
     deptsDirty,
     isPending,
     onSubmit,
+    updateDetailsMutation,
     statusMutation,
     deptsMutation,
     deleteMutation,
