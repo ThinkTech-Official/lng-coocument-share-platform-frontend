@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { type Video, VideoState, VideoUploadStatus, DepartmentAccess } from '../../types';
 import { getCategoriesPublic } from '../../api/categories';
+import { flattenCategories } from '../../utils/categoryHelpers';
 import { getDepartments } from '../../api/departments';
 import { getVideo, updateVideo, updateVideoStatus, deleteVideo } from '../../api/videos';
 import apiClient from '../../api/axios';
@@ -62,9 +63,7 @@ export function useVideoForm(id?: string) {
   });
   const departments = deptsResponse?.data ?? [];
 
-  const rootCategories = allCategories
-    .filter((c) => c.parent_category_id === null)
-    .sort((a, b) => a.sort_order - b.sort_order);
+  const flatCategories = flattenCategories(allCategories);
 
   // ─── Form ─────────────────────────────────────────────────────────────────
 
@@ -316,7 +315,7 @@ export function useVideoForm(id?: string) {
     video,
     videoLoading,
     videoError,
-    rootCategories,
+    flatCategories,
     catsLoading,
     departments,
     deptsLoading,

@@ -114,7 +114,7 @@ export default function CategoriesListPage() {
                   subcategoriesCount={cat.subcategories.length}
                   searchQuery={debouncedSearch}
                   isDeleting={isDeleting}
-                  onDelete={() => setDeleteTarget({ id: cat.id, name: cat.name, isRoot: true })}
+                  onDelete={() => setDeleteTarget({ id: cat.id, name: cat.name, level: 'root' })}
                 />
 
                 {/* Subcategories — animated expand / collapse */}
@@ -129,15 +129,34 @@ export default function CategoriesListPage() {
                     <div className="ml-6 sm:ml-12 mt-2 space-y-2">
                       {cat.subcategories.map((sub) => {
                         const isSubDeleting = deleteMutation.isPending && deleteTarget?.id === sub.id;
+                        const hasChildren = (sub.subcategories ?? []).length > 0;
                         return (
-                          <CategoryCard
-                            key={sub.id}
-                            category={sub}
-                            isRoot={false}
-                            searchQuery={debouncedSearch}
-                            isDeleting={isSubDeleting}
-                            onDelete={() => setDeleteTarget({ id: sub.id, name: sub.name, isRoot: false })}
-                          />
+                          <div key={sub.id}>
+                            <CategoryCard
+                              category={sub}
+                              isRoot={false}
+                              searchQuery={debouncedSearch}
+                              isDeleting={isSubDeleting}
+                              onDelete={() => setDeleteTarget({ id: sub.id, name: sub.name, level: 'sub' })}
+                            />
+                            {hasChildren && (
+                              <div className="ml-6 sm:ml-12 mt-2 space-y-2">
+                                {(sub.subcategories ?? []).map((child) => {
+                                  const isChildDeleting = deleteMutation.isPending && deleteTarget?.id === child.id;
+                                  return (
+                                    <CategoryCard
+                                      key={child.id}
+                                      category={child}
+                                      isRoot={false}
+                                      searchQuery={debouncedSearch}
+                                      isDeleting={isChildDeleting}
+                                      onDelete={() => setDeleteTarget({ id: child.id, name: child.name, level: 'child' })}
+                                    />
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
                         );
                       })}
                     </div>
@@ -160,7 +179,7 @@ export default function CategoriesListPage() {
         target={deleteTarget}
         isLoading={deleteMutation.isPending}
         onClose={() => !deleteMutation.isPending && setDeleteTarget(null)}
-        onConfirm={() => deleteTarget && deleteMutation.mutate({ id: deleteTarget.id, isRoot: deleteTarget.isRoot })}
+        onConfirm={() => deleteTarget && deleteMutation.mutate({ id: deleteTarget.id, level: deleteTarget.level })}
       />
     </>
   );

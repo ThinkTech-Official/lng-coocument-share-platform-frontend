@@ -34,9 +34,12 @@ export default function CategoryFormPage() {
   // Find the root category ID for level 2 category edit mode
   useEffect(() => {
     if (watchType === 'childSubcategory' && parentField.value && allCategories.length > 0) {
-      const parent = allCategories.find((c) => c.id === parentField.value);
-      if (parent && parent.parent_category_id) {
-        setSelectedRootId(parent.parent_category_id);
+      for (const root of allCategories) {
+        const sub = (root.subcategories ?? []).find((s) => s.id === parentField.value);
+        if (sub) {
+          setSelectedRootId(root.id);
+          break;
+        }
       }
     }
   }, [watchType, parentField.value, allCategories]);

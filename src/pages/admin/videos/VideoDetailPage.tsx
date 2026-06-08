@@ -109,7 +109,7 @@ export default function VideoDetailPage() {
     video,
     videoLoading,
     videoError,
-    rootCategories,
+    flatCategories,
     catsLoading,
     departments,
     deptsLoading,
@@ -303,15 +303,10 @@ export default function VideoDetailPage() {
                       {...register('category_id')}
                     >
                       <option value="">Select a category</option>
-                      {rootCategories.map((root: any) => (
-                        <optgroup key={root.id} label={root.name}>
-                          <option value={root.id}>{root.name}</option>
-                          {(root.subcategories ?? [])
-                            .sort((a: any, b: any) => a.sort_order - b.sort_order)
-                            .map((sub: any) => (
-                              <option key={sub.id} value={sub.id}>{'  '}› {sub.name}</option>
-                            ))}
-                        </optgroup>
+                      {flatCategories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.level === 0 ? cat.name : cat.level === 1 ? `  › ${cat.name}` : `    › › ${cat.name}`}
+                        </option>
                       ))}
                     </select>
                   )}

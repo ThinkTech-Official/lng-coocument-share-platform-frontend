@@ -3,11 +3,8 @@ import { type User } from '../types';
 
 export const login = (email: string, password: string) =>
   apiClient
-    .post<{ access_token?: string; token?: string; user: User }>('/auth/login', { email, password })
-    .then((r) => ({
-      access_token: r.data.access_token ?? r.data.token ?? '',
-      user: r.data.user,
-    }));
+    .post<{ user: User }>('/auth/login', { email, password })
+    .then((r) => ({ user: r.data.user }));
 
 export const forgotPassword = (email: string) =>
   apiClient.post('/auth/forgot-password', { email }).then((r) => r.data);

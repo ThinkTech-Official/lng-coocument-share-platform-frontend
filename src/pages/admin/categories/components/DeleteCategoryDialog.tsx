@@ -3,7 +3,7 @@ import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
 interface DeleteTarget {
   id: string;
   name: string;
-  isRoot: boolean;
+  level: 'root' | 'sub' | 'child';
 }
 
 interface DeleteCategoryDialogProps {
@@ -19,19 +19,29 @@ export default function DeleteCategoryDialog({
   onConfirm,
   isLoading,
 }: DeleteCategoryDialogProps) {
+  const title =
+    target?.level === 'root'
+      ? 'Delete Category'
+      : target?.level === 'sub'
+      ? 'Delete Subcategory'
+      : 'Delete Child Subcategory';
+
+  const message =
+    target?.level === 'root'
+      ? `Are you sure you want to delete ${target.name}? All subcategories and child subcategories will also be deleted. Documents and videos in this category will become uncategorized.`
+      : target?.level === 'sub'
+      ? `Are you sure you want to delete ${target?.name}? All child subcategories will also be deleted. Documents and videos in this subcategory will become uncategorized.`
+      : `Are you sure you want to delete ${target?.name}? Documents and videos in this child subcategory will become uncategorized.`;
+
   return (
     <ConfirmDialog
       open={!!target}
       onClose={onClose}
       onConfirm={onConfirm}
       loading={isLoading}
-      title={target?.isRoot ? 'Delete Category' : 'Delete Subcategory'}
+      title={title}
       confirmLabel="Delete"
-      message={
-        target?.isRoot
-          ? `Are you sure you want to delete ${target.name}? All subcategories will also be deleted. Documents and videos in this category will become uncategorized.`
-          : `Are you sure you want to delete ${target?.name}? Documents and videos in this subcategory will become uncategorized.`
-      }
+      message={message}
     />
   );
 }

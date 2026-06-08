@@ -45,11 +45,13 @@ export const contractorEditSchema = z.object({
 
 export const documentUploadSchema = z
   .object({
+    docType:           z.enum(['file', 'link']),
     title:             z.string().trim().min(2, 'Title must be at least 2 characters').max(200, 'Title is too long'),
     description:       z.string().trim().max(500, 'Description cannot exceed 500 characters'),
     category_id:       z.string().min(1, 'Please select a category'),
     department_access: z.enum(['ALL', 'RESTRICTED']),
     department_ids:    z.array(z.string()),
+    external_url:      z.string().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.department_access === 'RESTRICTED' && data.department_ids.length === 0) {
@@ -58,6 +60,15 @@ export const documentUploadSchema = z
         message: 'Select at least one department',
         path:    ['department_ids'],
       });
+    }
+    if (data.docType === 'link') {
+      if (!data.external_url || data.external_url.trim() === '') {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Please enter a URL', path: ['external_url'] });
+      } else {
+        try { new URL(data.external_url.trim()); } catch {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Please enter a valid URL', path: ['external_url'] });
+        }
+      }
     }
   });
 

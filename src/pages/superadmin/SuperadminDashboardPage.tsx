@@ -8,17 +8,14 @@ import {
   FileText,
   Video,
   ScrollText,
+  AlertCircle,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import PageHeader from '../../components/ui/PageHeader';
 import Spinner from '../../components/ui/Spinner';
 import Button from '../../components/ui/Button';
-import { getAdmins } from '../../api/admins';
-import { getContractors } from '../../api/contractors';
-import { getDepartments } from '../../api/departments';
-import { getDocuments } from '../../api/documents';
-import { getVideos } from '../../api/videos';
+import { getStats, type SuperadminStats } from '../../api/stats';
 
 // ─── Stat card ────────────────────────────────────────────────────────────────
 
@@ -48,10 +45,6 @@ function StatCard({ label, icon: Icon, count, isLoading, isError }: StatCardProp
       </div>
 
       <p className="text-sm text-lng-grey">{label}</p>
-
-      {isError && !isLoading && (
-        <p className="mt-1 text-xs text-lng-red">Failed to load</p>
-      )}
     </div>
   );
 }
@@ -93,21 +86,17 @@ export default function SuperadminDashboardPage() {
     return () => { document.title = 'LNG Canada'; };
   }, []);
 
-  // Trigger fade-in after first paint
   useEffect(() => {
     const raf = requestAnimationFrame(() => setVisible(true));
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // ─── Queries (limit=1; use meta.total for the count) ────────────────────────
+  const { data: stats, isLoading, isError, refetch } = useQuery({
+    queryKey: ['stats'],
+    queryFn: getStats,
+  });
 
-  const admins      = useQuery({ queryKey: ['admins-count'],      queryFn: () => getAdmins({ page: 1, limit: 1 }) });
-  const contractors = useQuery({ queryKey: ['contractors-count'], queryFn: () => getContractors({ page: 1, limit: 1 }) });
-  const departments = useQuery({ queryKey: ['departments-count'], queryFn: () => getDepartments({ page: 1, limit: 1 }) });
-  const documents   = useQuery({ queryKey: ['documents-count'],   queryFn: () => getDocuments({ page: 1, limit: 1 }) });
-  const videos      = useQuery({ queryKey: ['videos-count'],      queryFn: () => getVideos({ page: 1, limit: 1 }) });
-
-  // ─── Render ─────────────────────────────────────────────────────────────────
+  const typedStats = stats as SuperadminStats | undefined;
 
   return (
     <div>
@@ -125,39 +114,50 @@ export default function SuperadminDashboardPage() {
         <StatCard
           label="Total Admins"
           icon={Users}
-          count={admins.data?.meta?.total}
-          isLoading={admins.isLoading}
-          isError={admins.isError}
+          count={typedStats?.admins ?? 0}
+          isLoading={isLoading}
+          isError={isError}
         />
         <StatCard
           label="Total Contractors"
           icon={HardHat}
-          count={contractors.data?.meta?.total}
-          isLoading={contractors.isLoading}
-          isError={contractors.isError}
+          count={typedStats?.contractors ?? 0}
+          isLoading={isLoading}
+          isError={isError}
         />
         <StatCard
           label="Total Departments"
           icon={Building2}
-          count={departments.data?.meta?.total}
-          isLoading={departments.isLoading}
-          isError={departments.isError}
+          count={typedStats?.departments ?? 0}
+          isLoading={isLoading}
+          isError={isError}
         />
         <StatCard
           label="Total Documents"
           icon={FileText}
-          count={documents.data?.meta?.total}
-          isLoading={documents.isLoading}
-          isError={documents.isError}
+          count={typedStats?.documents ?? 0}
+          isLoading={isLoading}
+          isError={isError}
         />
         <StatCard
           label="Total Videos"
           icon={Video}
-          count={videos.data?.meta?.total}
-          isLoading={videos.isLoading}
-          isError={videos.isError}
+          count={typedStats?.videos ?? 0}
+          isLoading={isLoading}
+          isError={isError}
         />
       </div>
+
+      {/* ── Error retry ── */}
+      {isError && (
+        <div className="mt-4 flex items-center gap-3">
+          <AlertCircle size={16} className="text-lng-red" />
+          <span className="text-sm text-lng-grey">Failed to load stats. Please try again.</span>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            Retry
+          </Button>
+        </div>
+      )}
 
       {/* ── Quick actions ── */}
       <div className="mt-10">
