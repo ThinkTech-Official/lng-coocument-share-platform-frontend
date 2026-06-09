@@ -268,7 +268,7 @@ export default function ContractorLayout() {
         <li key={`${item.type}-${item.id}`}>
           <Link
             to={to}
-            className="flex items-center gap-1 text-xs leading-relaxed transition-colors hover:underline text-lng-blue w-full text-left"
+            className="flex items-center gap-1 text-sm leading-relaxed transition-colors hover:underline text-lng-blue w-full text-left"
           >
             {item.title}
             <ExternalLink size={10} className="shrink-0 opacity-60" />
@@ -277,11 +277,12 @@ export default function ContractorLayout() {
       );
     }
 
+
     return (
       <li key={`${item.type}-${item.id}`}>
         <Link
           to={to}
-          className={`block text-xs leading-relaxed transition-colors hover:underline ${
+          className={`block text-sm leading-relaxed transition-colors hover:underline ${
             isActive ? 'text-lng-red font-bold underline' : 'text-lng-blue'
           }`}
         >
@@ -297,7 +298,7 @@ export default function ContractorLayout() {
         key={group.id}
         className="bg-[#fafafa] border-8 border-lng-blue p-4"
       >
-        <h3 className="text-xs font-extrabold text-lng-red uppercase tracking-wider mb-2 pb-1 border-b border-gray-200">
+        <h3 className="text-[14px] font-bold text-lng-red uppercase tracking-wider mb-2 pb-1 border-b border-gray-200">
           {group.label}
         </h3>
 
@@ -311,7 +312,7 @@ export default function ContractorLayout() {
         {/* Subcategory groups */}
         {group.subGroups.map((sub) => (
           <div key={sub.id} className="mt-2">
-            <h4 className="text-[10px] font-bold text-lng-red uppercase tracking-wider mb-1 pl-1 border-l-2 border-lng-blue">
+            <h4 className="text-[13px] font-bold text-lng-red uppercase tracking-wider mb-1 pl-1 border-l-2 border-lng-blue">
               {sub.label}
             </h4>
 
@@ -325,7 +326,7 @@ export default function ContractorLayout() {
             {/* Child subcategory groups */}
             {sub.childGroups.map((child) => (
               <div key={child.id} className="mt-1.5 pl-2">
-                <h5 className="text-[9px] font-bold text-lng-grey uppercase tracking-wider mb-1 pl-1 border-l border-lng-blue-40">
+                <h5 className="text-[13px] font-bold text-lng-red uppercase tracking-wider mb-1 pl-1 border-l border-lng-blue">
                   {child.label}
                 </h5>
                 <ul className="space-y-1.5 pl-2">
