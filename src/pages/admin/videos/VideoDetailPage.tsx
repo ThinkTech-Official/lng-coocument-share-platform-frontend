@@ -24,7 +24,7 @@ import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import Toggle from '../../../components/ui/Toggle';
 import Input from '../../../components/ui/Input';
 import { useVideoForm } from '../../../hooks/admin/useVideoForm';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -135,6 +135,13 @@ export default function VideoDetailPage() {
   const [showOfflineConfirm, setShowOfflineConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm]   = useState(false);
   const [showAllDeptConfirm, setShowAllDeptConfirm] = useState(false);
+  const [deptError, setDeptError] = useState(false);
+
+  useEffect(() => {
+    if (localAccess === DepartmentAccess.ALL || selectedDeptIds.length > 0) {
+      setDeptError(false);
+    }
+  }, [localAccess, selectedDeptIds]);
 
 
   const descValue = useWatch({ control, name: 'description' }) ?? '';
@@ -391,9 +398,13 @@ export default function VideoDetailPage() {
               </div>
 
               {localAccess === DepartmentAccess.RESTRICTED && (
-                <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+                <div className={`rounded-lg border p-3 ${
+                  deptError
+                    ? 'border-lng-red'
+                    : 'border-gray-100 bg-gray-50'
+                }`}>
                   <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
-                    Select Departments
+                    Select Departments <span className="text-lng-red">*</span>
                   </p>
                   {deptsLoading ? (
                     <Spinner size="sm" />
@@ -416,6 +427,11 @@ export default function VideoDetailPage() {
                       })}
                     </div>
                   )}
+                  {deptError && (
+                    <p className="mt-2 text-xs text-lng-red font-semibold">
+                      At least one department must be selected.
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -425,7 +441,13 @@ export default function VideoDetailPage() {
                 className="w-full"
                 disabled={!deptsDirty || isPending || !isReady}
                 loading={deptsMutation.isPending}
-                onClick={() => deptsMutation.mutate()}
+                onClick={() => {
+                  if (localAccess === DepartmentAccess.RESTRICTED && selectedDeptIds.length === 0) {
+                    setDeptError(true);
+                  } else {
+                    deptsMutation.mutate();
+                  }
+                }}
               >
                 <Save size={14} />
                 Save Access
