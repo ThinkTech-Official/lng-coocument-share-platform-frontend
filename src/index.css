@@ -18,6 +18,7 @@
   --color-lng-yellow: #FBCE07;
 
   --font-sans: Arial, sans-serif;
+  --animate-spin-slow: spin 12s linear infinite;
 }
 
 * {

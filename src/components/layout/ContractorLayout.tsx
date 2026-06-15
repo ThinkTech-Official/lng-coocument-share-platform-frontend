@@ -6,6 +6,7 @@ import { useAuthStore } from '../../store/authStore';
 import { getDocuments } from '../../api/documents';
 import { getVideos } from '../../api/videos';
 import Spinner from '../ui/Spinner';
+import WeatherCards from '../ui/WeatherCards';
 
 type SidebarItem = {
   id: string;
@@ -282,9 +283,8 @@ export default function ContractorLayout() {
       <li key={`${item.type}-${item.id}`}>
         <Link
           to={to}
-          className={`block text-sm leading-relaxed transition-colors hover:underline ${
-            isActive ? 'text-lng-red font-bold underline' : 'text-lng-blue'
-          }`}
+          className={`block text-sm leading-relaxed transition-colors hover:underline ${isActive ? 'text-lng-red font-bold underline' : 'text-lng-blue'
+            }`}
         >
           {item.title}
         </Link>
@@ -374,36 +374,41 @@ export default function ContractorLayout() {
             Contractor Resource Site
           </p>
         </div>
-      </div>
-
-      {/* Search bar */}
-      <div className="flex justify-end px-3 py-1">
-        <div className="relative flex items-center">
-          <input
-            type="text"
-            placeholder="Search documents & videos..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-gray-50 hover:bg-gray-100 focus:bg-white text-gray-800 placeholder-gray-400 text-xs px-3 py-2 pl-8 pr-8 rounded-sm border border-gray-400 focus:border-lng-blue focus:outline-none focus:border-2 w-48 sm:w-60 transition-all font-normal normal-case peer"
-          />
-          <Search
-            size={12}
-            className="absolute left-2.5 pointer-events-none transition-colors text-gray-400 peer-focus:text-lng-blue"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                setSearchQuery('');
-              }}
-              className="absolute right-2.5 focus:outline-none cursor-pointer flex items-center justify-center"
-            >
-              <X size={14} className="text-gray-600 hover:text-gray-800" />
-            </button>
-          )}
+        {/* Search bar */}
+        <div className="flex justify-end px-3 py-1">
+          <div className="relative flex items-center">
+            <input
+              type="text"
+              placeholder="Search documents & videos..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-gray-50 hover:bg-gray-100 focus:bg-white text-gray-800 placeholder-gray-400 text-xs px-3 py-2 pl-8 pr-8 rounded-sm border border-gray-400 focus:border-lng-blue focus:outline-none focus:border-2 w-48 sm:w-60 transition-all font-normal normal-case peer"
+            />
+            <Search
+              size={12}
+              className="absolute left-2.5 pointer-events-none transition-colors text-gray-400 peer-focus:text-lng-blue"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  setSearchQuery('');
+                }}
+                className="absolute right-2.5 focus:outline-none cursor-pointer flex items-center justify-center"
+              >
+                <X size={14} className="text-gray-600 hover:text-gray-800" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      <div className="px-6">
+      <WeatherCards/>
+      </div>
+
+
 
       {/* Main 3-Column Content Layout */}
       <div className="flex-1 max-w-[1600px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-3 p-3 sm:p-6">
@@ -459,8 +464,8 @@ export default function ContractorLayout() {
                     const cardContent = (
                       <div className="flex items-start gap-2.5">
                         <div className={`p-1.5 rounded-sm transition-colors mt-0.5 ${isVideo
-                            ? 'bg-lng-orange/10 text-lng-orange group-hover:bg-lng-orange group-hover:text-white'
-                            : 'bg-lng-blue/10 text-lng-blue group-hover:bg-lng-blue group-hover:text-white'
+                          ? 'bg-lng-orange/10 text-lng-orange group-hover:bg-lng-orange group-hover:text-white'
+                          : 'bg-lng-blue/10 text-lng-blue group-hover:bg-lng-blue group-hover:text-white'
                           }`}>
                           {isVideo ? <Video size={14} /> : <FileText size={14} />}
                         </div>
@@ -493,8 +498,8 @@ export default function ContractorLayout() {
                         to={to}
                         onClick={() => setSearchQuery('')}
                         className={`block p-3 border border-gray-100 rounded-sm transition-all group ${isVideo
-                            ? 'hover:border-lng-orange/40 hover:bg-lng-orange/5'
-                            : 'hover:border-lng-blue/40 hover:bg-lng-blue/5'
+                          ? 'hover:border-lng-orange/40 hover:bg-lng-orange/5'
+                          : 'hover:border-lng-blue/40 hover:bg-lng-blue/5'
                           }`}
                       >
                         {cardContent}

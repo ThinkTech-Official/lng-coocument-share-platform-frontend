@@ -15,6 +15,7 @@ import PageHeader from '../../components/ui/PageHeader';
 import Spinner from '../../components/ui/Spinner';
 import Button from '../../components/ui/Button';
 import { getStats, type AdminStats } from '../../api/stats';
+import WeatherCards from '../../components/ui/WeatherCards';
 
 // ─── Stat card ────────────────────────────────────────────────────────────────
 
@@ -101,6 +102,8 @@ export default function AdminDashboardPage() {
         title="Dashboard"
         subtitle={`Welcome back, ${user?.name ?? ''}`}
       />
+
+      <WeatherCards />
 
       {/* ── Stats grid ── */}
       <div
