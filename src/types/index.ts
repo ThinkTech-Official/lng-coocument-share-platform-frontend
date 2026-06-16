@@ -174,3 +174,24 @@ export interface ListParams {
   search?: string;
   cursor?: string;
 }
+
+// ─── Notification types ──────────────────────────────────────────────────────
+
+export const NotificationCategory = {
+  RED: 'red',
+  ORANGE: 'orange',
+  YELLOW: 'yellow',
+  GREEN: 'green',
+  BLUE: 'blue',
+  BLACK: 'black',
+} as const;
+export type NotificationCategory = (typeof NotificationCategory)[keyof typeof NotificationCategory];
+
+export interface Notification {
+  id: string;
+  title: string;
+  content: string;
+  category: NotificationCategory;
+  created_at: string;
+}
+

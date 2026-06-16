@@ -1,4 +1,4 @@
-import { LayoutDashboard, HardHat, Building2, Tag, FileText, Video } from 'lucide-react';
+import { LayoutDashboard, HardHat, Building2, Tag, FileText, Video, Bell } from 'lucide-react';
 import DashboardLayout from './DashboardLayout';
 
 const navItems = [
@@ -8,6 +8,7 @@ const navItems = [
   { label: 'Categories', to: '/admin/categories', icon: Tag },
   { label: 'Documents', to: '/admin/documents', icon: FileText },
   { label: 'Videos', to: '/admin/videos', icon: Video },
+  { label: 'Notifications', to: '/admin/notifications', icon: Bell },
 ];
 
 export default function AdminLayout() {
