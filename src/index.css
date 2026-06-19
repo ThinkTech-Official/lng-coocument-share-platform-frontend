@@ -37,3 +37,37 @@ button:disabled,
 button[disabled] {
   cursor: default;
 }
+
+.custom-thin-scrollbar::-webkit-scrollbar {
+          width: 3px !important;
+        }
+        .custom-thin-scrollbar::-webkit-scrollbar-track {
+          background: transparent !important;
+        }
+        .custom-thin-scrollbar::-webkit-scrollbar-thumb {
+          background: #cbd5e1 !important;
+          border-radius: 9999px !important;
+        }
+        .custom-thin-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8 !important;
+        }
+        
+        /* HARD OVERRIDE: Destroys up/down buttons and arrow step components completely */
+        .custom-thin-scrollbar::-webkit-scrollbar-button,
+        .custom-thin-scrollbar::-webkit-scrollbar-button:start,
+        .custom-thin-scrollbar::-webkit-scrollbar-button:end,
+        .custom-thin-scrollbar::-webkit-scrollbar-button:vertical:decrement,
+        .custom-thin-scrollbar::-webkit-scrollbar-button:vertical:increment {
+          display: none !important;
+          height: 0px !important;
+          width: 0px !important;
+          background: transparent !important;
+        }
+
+        /* Gecko Engines (Firefox Override Layout) */
+        @supports (-moz-appearance: none) {
+          .custom-thin-scrollbar {
+            scrollbar-width: thin !important;
+            scrollbar-color: #cbd5e1 transparent !important;
+          }
+        }
