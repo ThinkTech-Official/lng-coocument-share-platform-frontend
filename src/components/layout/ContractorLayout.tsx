@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
-import { LogOut, FileText, Video, Home, Search, X, ExternalLink } from 'lucide-react';
+import { LogOut, FileText, Video, Home, Search, X, ExternalLink, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { getDocuments } from '../../api/documents';
 import { getVideos } from '../../api/videos';
@@ -148,6 +148,14 @@ export default function ContractorLayout() {
   const location = useLocation();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+
+  const toggleSection = (sectionKey: string) => {
+    setCollapsedSections((prev) => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey],
+    }));
+  };
 
   // Clear search query on navigation
   useEffect(() => {
@@ -269,7 +277,7 @@ export default function ContractorLayout() {
         <li key={`${item.type}-${item.id}`}>
           <Link
             to={to}
-            className="flex items-center gap-1 text-sm leading-relaxed transition-colors hover:underline text-lng-blue w-full text-left"
+            className="flex items-center gap-1 text-sm leading-relaxed transition-colors hover:underline text-gray-600 w-full text-left"
           >
             {item.title}
             <ExternalLink size={10} className="shrink-0 opacity-60" />
@@ -283,7 +291,7 @@ export default function ContractorLayout() {
       <li key={`${item.type}-${item.id}`}>
         <Link
           to={to}
-          className={`block text-sm leading-relaxed transition-colors hover:underline ${isActive ? 'text-lng-red font-bold underline' : 'text-lng-blue'
+          className={`block text-sm leading-relaxed transition-colors hover:underline ${isActive ? 'text-lng-red font-bold underline' : 'text-gray-600'
             }`}
         >
           {item.title}
@@ -296,9 +304,9 @@ export default function ContractorLayout() {
     return (
       <div
         key={group.id}
-        className="bg-[#fafafa] border-8 border-lng-blue p-4"
+        className="bg-[#fafafa] border-8 border-[#E9EDEF] p-4"
       >
-        <h3 className="text-[14px] font-bold text-lng-red uppercase tracking-wider mb-2 pb-1 border-b border-gray-200">
+        <h3 className="text-[15px] font-bold text-lng-blue uppercase tracking-wider mb-2 pb-1 border-b border-gray-200">
           {group.label}
         </h3>
 
@@ -310,32 +318,66 @@ export default function ContractorLayout() {
         )}
 
         {/* Subcategory groups */}
-        {group.subGroups.map((sub) => (
-          <div key={sub.id} className="mt-2">
-            <h4 className="text-[13px] font-bold text-lng-red uppercase tracking-wider mb-1 pl-1 border-l-2 border-lng-blue">
-              {sub.label}
-            </h4>
+        {group.subGroups.map((sub) => {
+          const subKey = `${group.id}-${sub.id}`;
+          const isSubCollapsed = collapsedSections[subKey] === true;
 
-            {/* Items directly in this subcategory */}
-            {sub.items.length > 0 && (
-              <ul className="space-y-1.5 pl-2">
-                {sub.items.map((item) => renderSidebarItem(item))}
-              </ul>
-            )}
+          return (
+            <div key={sub.id} className="mt-2">
+              <h4
+                onClick={() => toggleSection(subKey)}
+                className="flex items-center gap-1 text-[14px] font-semibold text-lng-blue uppercase tracking-wider mb-1 cursor-pointer select-none hover:text-lng-blue/80 transition-colors"
+              >
+                <ChevronDown
+                  size={16}
+                  className={`transform transition-transform duration-200 ${
+                    isSubCollapsed ? '-rotate-90' : 'rotate-0'
+                  }`}
+                />
+                {sub.label}
+              </h4>
 
-            {/* Child subcategory groups */}
-            {sub.childGroups.map((child) => (
-              <div key={child.id} className="mt-1.5 pl-2">
-                <h5 className="text-[13px] font-bold text-lng-red uppercase tracking-wider mb-1 pl-1 border-l border-lng-blue">
-                  {child.label}
-                </h5>
-                <ul className="space-y-1.5 pl-2">
-                  {child.items.map((item) => renderSidebarItem(item))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        ))}
+              {!isSubCollapsed && (
+                <>
+                  {/* Items directly in this subcategory */}
+                  {sub.items.length > 0 && (
+                    <ul className="space-y-1.5 pl-4 mb-2">
+                      {sub.items.map((item) => renderSidebarItem(item))}
+                    </ul>
+                  )}
+
+                  {/* Child subcategory groups */}
+                  {sub.childGroups.map((child) => {
+                    const childKey = `${group.id}-${sub.id}-${child.id}`;
+                    const isChildCollapsed = collapsedSections[childKey] === true;
+
+                    return (
+                      <div key={child.id} className="mt-1.5 pl-4">
+                        <h5
+                          onClick={() => toggleSection(childKey)}
+                          className="flex items-center gap-1 text-[13px] font-semibold text-lng-blue uppercase tracking-wider mb-1 cursor-pointer select-none hover:text-lng-blue/80 transition-colors"
+                        >
+                          <ChevronDown
+                            size={12}
+                            className={`transform transition-transform duration-200 ${
+                              isChildCollapsed ? '-rotate-90' : 'rotate-0'
+                            }`}
+                          />
+                          {child.label}
+                        </h5>
+                        {!isChildCollapsed && (
+                          <ul className="space-y-1.5 pl-4">
+                            {child.items.map((item) => renderSidebarItem(item))}
+                          </ul>
+                        )}
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   }
@@ -405,7 +447,7 @@ export default function ContractorLayout() {
       </div>
 
       <div className="px-6">
-      <WeatherCards/>
+        <WeatherCards />
       </div>
 
 
@@ -418,7 +460,7 @@ export default function ContractorLayout() {
           {isInitialLoading ? (
             <SidebarSkeleton />
           ) : (
-            leftGroups.map((group) => renderGroupSidebar(group))
+            <div className='rounded-md border-2 border-[#E9EDEF]'>{leftGroups.map((group) => renderGroupSidebar(group))}</div>
           )}
           {isFetchingNext && (
             <div className="flex justify-center py-3">
@@ -519,7 +561,7 @@ export default function ContractorLayout() {
           {isInitialLoading ? (
             <SidebarSkeleton />
           ) : (
-            rightGroups.map((group) => renderGroupSidebar(group))
+            <div className='rounded-md border-2 border-[#E9EDEF]'>{rightGroups.map((group) => renderGroupSidebar(group))}</div>
           )}
           {isFetchingNext && (
             <div className="flex justify-center py-3">
