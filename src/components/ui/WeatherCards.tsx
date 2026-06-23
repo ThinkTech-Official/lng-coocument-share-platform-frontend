@@ -34,10 +34,7 @@ import {
 } from 'recharts';
 
 
-const API_KEY = '8aaf48e6cef9e5748c8db14b7468472a';
-
-// The exact custom color palette parameter string from your reference image
-const CUSTOM_PALETTE = '-65:821692;-55:821692;-45:821692;-40:821692;-30:8257db;-20:208cec;-10:20c4e8;0:23dddd;10:c2ff28;20:fff028;25:ffc228;30:fc8014';
+const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY ?? '';
 
 const getConditionIcon = (id: number, windSpeed: number) => {
   if (id >= 200 && id < 300) return <CloudLightning size={18} className="text-purple-500" />;
@@ -109,7 +106,7 @@ export default function WeatherCards() {
           'https://api.openweathermap.org/data/2.5/weather',
           {
             params: {
-              q: 'Calgary,CA',
+              q: 'Kitimat,CA',
               appid: API_KEY,
               units: 'metric',
             },
@@ -143,8 +140,8 @@ export default function WeatherCards() {
           // Slice the first 8 items representing the next 24 hours in 3-hour intervals
           setForecast(forecastRes.data.list.slice(0, 8));
         }
-      } catch (err) {
-        console.error("Error retrieving air quality data parameters:", err);
+      } catch {
+        // loading state handles the error case
       } finally {
         setLoading(false);
       }
@@ -200,7 +197,7 @@ export default function WeatherCards() {
   if (temp <= 10)  return '#10B981'; // cool/mild   — green
   if (temp <= 20)  return '#EAB308'; // warm        — yellow
   if (temp <= 28)  return '#F97316'; // hot         — orange
-  return '#EF4444';                  // very hot    — red (rare in Calgary)
+  return '#EF4444';                  // very hot    — red
 };
 
   return (
@@ -215,7 +212,7 @@ export default function WeatherCards() {
         <div className="flex flex-col h-full justify-between">
           <div>
             <h4 className="text-[11px] font-bold text-slate-500 tracking-[0.08em] uppercase leading-none mb-1">
-              Calgary Weather
+              Kitimat Weather
             </h4>
             <p className="text-xs text-slate-400 leading-none mb-3">Canada</p>
 
@@ -250,12 +247,12 @@ export default function WeatherCards() {
         </div>
       </div>
 
-      {/* 1. OpenWeather TA2 Calgary Heat Map Card */}
+      {/* 1. OpenWeather TA2 Kitimat Heat Map Card */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-br bg-white border shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 from-slate-50/50 to-zinc-50/50 border-slate-200/60 hover:border-slate-300">
         <div className="p-4 border-b border-slate-100/80 flex justify-between items-center">
           <div>
             <h4 className="text-[11px] font-bold text-slate-500 tracking-[0.08em] uppercase leading-none">
-              Calgary Heat Map
+              Kitimat Heat Map
             </h4>
             <p className="text-xs text-slate-400 leading-none mt-1">Air Temp (2m) · TA2 Layer</p>
           </div>
@@ -267,7 +264,7 @@ export default function WeatherCards() {
 
         <div className="w-full h-[180px] bg-slate-50 relative">
           <iframe
-            title="Calgary OpenWeather Map"
+            title="Kitimat OpenWeather Map"
             srcDoc={`
         <!DOCTYPE html>
         <html>
@@ -288,7 +285,7 @@ export default function WeatherCards() {
           <div id="map"></div>
           <script>
             const map = L.map('map', {
-              center: [51.0501, -114.0853],
+              center: [54.0521, -128.6557],
               zoom: 9, 
               zoomControl: false,
               attributionControl: false
@@ -324,7 +321,7 @@ export default function WeatherCards() {
             <h4 className="text-[11px] font-bold text-slate-500 tracking-[0.08em] uppercase leading-none mb-1">
               Air Quality
             </h4>
-            <p className="text-xs text-slate-400 leading-none mb-3">Calgary, CA</p>
+            <p className="text-xs text-slate-400 leading-none mb-3">Kitimat, BC</p>
 
             <div className="flex items-baseline gap-2">
               <span className="text-4xl font-bold tracking-tight text-slate-900 tabular-nums">
