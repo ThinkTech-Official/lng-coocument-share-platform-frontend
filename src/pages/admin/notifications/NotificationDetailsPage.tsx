@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 import { type NotificationCategory } from '../../../types';
-import { getNotificationById, deleteNotification, updateNotification } from '../../../api/Notifications';
+import { getNotificationById, deleteNotification, updateNotification, uploadNotificationImage } from '../../../api/Notifications';
 import Button from '../../../components/ui/Button';
 import ContentRenderer from '../../../components/ui/MarkdownRenderer';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
@@ -261,6 +261,10 @@ export default function NotificationDetailsPage() {
                   disabled={updateMutation.isPending}
                   hasError={!!editErrors.content}
                   minHeight={250}
+                  onUploadImage={async (file) => {
+                    const { url } = await uploadNotificationImage(file);
+                    return url;
+                  }}
                 />
                 {editErrors.content && (
                   <p className="text-xs text-lng-red font-semibold">{editErrors.content}</p>

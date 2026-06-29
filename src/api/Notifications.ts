@@ -28,6 +28,19 @@ export const deleteNotification = (id: string) =>
     .delete<{ message: string }>(`/notifications/${id}`)
     .then((r) => r.data);
 
+export const getNotificationById = (id: string) =>
+  apiClient
+    .get<Notification>(`/notifications/${id}`)
+    .then((r) => r.data);
+
+export const updateNotification = (
+  id: string,
+  data: { title: string; content: string; category: NotificationCategory },
+) =>
+  apiClient
+    .patch<Notification>(`/notifications/${id}`, data)
+    .then((r) => r.data);
+
 export const uploadNotificationImage = async (
   file: File,
 ): Promise<{ url: string }> => {
@@ -40,23 +53,3 @@ export const uploadNotificationImage = async (
   );
   return data;
 };
-
-export const getNotificationById = async (id: string) => {
-  await delay(200); // simulate network latency
-  const all = getStoredNotifications();
-  return all.find((n) => n.id === id) || null;
-};
-
-export const updateNotification = async (
-  id: string,
-  data: { title: string; content: string; category: NotificationCategory }
-) => {
-  await delay(400); // simulate network latency
-  const all = getStoredNotifications();
-  const idx = all.findIndex((n) => n.id === id);
-  if (idx === -1) throw new Error('Notification not found');
-  all[idx] = { ...all[idx], ...data };
-  saveNotifications(all);
-  return all[idx];
-};
-

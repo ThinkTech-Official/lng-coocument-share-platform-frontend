@@ -17,12 +17,14 @@ const ALLOWED_ATTRS: Record<string, string[]> = {
   a:    ['href', 'title', 'rel', 'target'],
   span: ['style'],
   code: ['class'],
+  img:  ['src', 'alt', 'title', 'width', 'style'],
   '*':  [],
 };
 
 /** Strip any attribute whose value contains a script or event handler. */
 function isSafeAttrValue(value: string): boolean {
   const lower = value.toLowerCase();
+  if (lower.startsWith('https://')) return true;
   return !lower.includes('javascript:') && !lower.includes('data:') && !lower.startsWith('on');
 }
 

@@ -81,13 +81,20 @@ function ResizableImageView({ node, updateAttributes, deleteNode, selected }: No
         className={`rte-image-inner ${selected ? 'rte-image-selected' : ''}`}
         style={{ width: width ? `${width}px` : '100%', maxWidth: '100%' }}
       >
-        <img
-          ref={imgRef}                            // ← Attach ref
-          src={src}
-          alt={alt || ''}
-          draggable={false}
-          className="rte-img"
-        />
+        {src && (
+          <img
+            ref={imgRef}
+            src={src}
+            alt={alt || ''}
+            draggable={false}
+            className="rte-img"
+            onError={() => {
+              if (import.meta.env.DEV) {
+                console.warn('Image failed to load:', src);
+              }
+            }}
+          />
+        )}
 
         <div
           className="rte-resize-handle rte-resize-left"
