@@ -27,3 +27,16 @@ export const deleteNotification = (id: string) =>
   apiClient
     .delete<{ message: string }>(`/notifications/${id}`)
     .then((r) => r.data);
+
+export const uploadNotificationImage = async (
+  file: File,
+): Promise<{ url: string }> => {
+  const fd = new FormData();
+  fd.append('image', file);
+  const { data } = await apiClient.post<{ url: string }>(
+    '/notifications/upload-image',
+    fd,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  );
+  return data;
+};

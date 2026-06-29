@@ -5,7 +5,7 @@ import { ArrowLeft, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { type NotificationCategory } from '../../../types';
-import { createNotification } from '../../../api/Notifications';
+import { createNotification, uploadNotificationImage } from '../../../api/Notifications';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import RichTextEditor from '../../../components/ui/RichTextEditor';
@@ -63,8 +63,6 @@ export default function PostNotificationPage() {
       category: formCategory,
       content: formContent,
     };
-    console.log('Sending notification payload to backend:', payload);
-
     createMutation.mutate(payload);
   };
 
@@ -170,6 +168,10 @@ export default function PostNotificationPage() {
               disabled={createMutation.isPending}
               hasError={!!formErrors.content}
               minHeight={300}
+              onUploadImage={async (file) => {
+                const { url } = await uploadNotificationImage(file);
+                return url;
+              }}
             />
             {formErrors.content && (
               <p className="text-xs text-lng-red font-semibold">{formErrors.content}</p>

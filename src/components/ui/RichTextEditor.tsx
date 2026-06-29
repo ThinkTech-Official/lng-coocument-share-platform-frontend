@@ -16,6 +16,7 @@ import {
   Link as LinkIcon, Unlink, List, ListOrdered, Quote, Minus, Eraser, Check, X,
   ImageIcon, Upload, Globe, Trash2, PencilLine,
 } from 'lucide-react';
+import Spinner from './Spinner';
 
 // ─── Color palette ──────────────────────────────────────────────────────────────
 const TEXT_COLORS = [
@@ -292,9 +293,13 @@ function LinkPopover({ open, initialUrl, onApply, onRemove, onClose }: LinkPopov
 // ─── Image Popover ──────────────────────────────────────────────────────────────
 type ImageTab = 'upload' | 'url';
 
+type ImageInsertPayload =
+  | { file: File; alt?: string }
+  | { url: string; alt?: string };
+
 interface ImagePopoverProps {
   open: boolean;
-  onInsert: (src: string, alt?: string) => void;
+  onInsert: (payload: ImageInsertPayload) => void;
   onClose: () => void;
 }
 
@@ -304,12 +309,22 @@ function ImagePopover({ open, onInsert, onClose }: ImagePopoverProps) {
   const [alt, setAlt] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (open) { setTab('upload'); setUrl(''); setAlt(''); setPreview(null); setError(''); }
+    if (open) {
+      setTab('upload'); setUrl(''); setAlt(''); setPreview(null);
+      setSelectedFile(null); setError('');
+    }
   }, [open]);
+
+  useEffect(() => {
+    return () => {
+      if (preview && preview.startsWith('blob:')) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
 
   if (!open) return null;
 
@@ -319,9 +334,10 @@ function ImagePopover({ open, onInsert, onClose }: ImagePopoverProps) {
     if (!ACCEPTED.includes(file.type)) { setError('Unsupported type. Use JPG, PNG, GIF, WebP, or SVG.'); return; }
     if (file.size > 5 * 1024 * 1024) { setError('File too large. Max 5 MB.'); return; }
     setError('');
-    const reader = new FileReader();
-    reader.onload = (e) => setPreview(e.target?.result as string);
-    reader.readAsDataURL(file);
+    if (preview && preview.startsWith('blob:')) URL.revokeObjectURL(preview);
+    const objectUrl = URL.createObjectURL(file);
+    setPreview(objectUrl);
+    setSelectedFile(file);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (f) readFile(f); };
@@ -329,12 +345,12 @@ function ImagePopover({ open, onInsert, onClose }: ImagePopoverProps) {
 
   const handleInsert = () => {
     if (tab === 'upload') {
-      if (!preview) { setError('Select an image first.'); return; }
-      onInsert(preview, alt || undefined);
+      if (!selectedFile) { setError('Select an image first.'); return; }
+      onInsert({ file: selectedFile, alt: alt || undefined });
     } else {
       const t = url.trim();
       if (!t) { setError('Enter an image URL.'); return; }
-      onInsert(/^https?:\/\//i.test(t) ? t : `https://${t}`, alt || undefined);
+      onInsert({ url: /^https?:\/\//i.test(t) ? t : `https://${t}`, alt: alt || undefined });
     }
   };
 
@@ -377,7 +393,7 @@ function ImagePopover({ open, onInsert, onClose }: ImagePopoverProps) {
           ) : (
             <div className="relative">
               <img src={preview} alt="Preview" className="w-full rounded-lg border border-gray-200 object-contain max-h-36" />
-              <button type="button" onMouseDown={(e) => { e.preventDefault(); setPreview(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+              <button type="button" onMouseDown={(e) => { e.preventDefault(); if (preview && preview.startsWith('blob:')) URL.revokeObjectURL(preview); setPreview(null); setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
                 className="absolute top-1.5 right-1.5 rounded-full bg-white/90 p-0.5 shadow border border-gray-200" title="Remove">
                 <X size={11} className="text-gray-500" />
               </button>
@@ -416,6 +432,7 @@ interface RichTextEditorProps {
   disabled?: boolean;
   hasError?: boolean;
   minHeight?: number;
+  onUploadImage?: (file: File) => Promise<string>;
 }
 
 // ─── Editor ─────────────────────────────────────────────────────────────────────
@@ -426,10 +443,12 @@ export default function RichTextEditor({
   disabled = false,
   hasError = false,
   minHeight = 260,
+  onUploadImage,
 }: RichTextEditorProps) {
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
   const [linkInitialUrl, setLinkInitialUrl] = useState('');
   const [imagePopoverOpen, setImagePopoverOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
   const editor = useEditor({
@@ -500,10 +519,34 @@ export default function RichTextEditor({
     setImagePopoverOpen(true);
   };
 
-  const insertImage = (src: string, alt?: string) => {
+  const insertImage = async (payload: ImageInsertPayload) => {
     if (!editor) return;
     setImagePopoverOpen(false);
-    (editor.chain().focus() as any).setResizableImage({ src, alt: alt ?? '' }).run();
+
+    let src: string;
+
+    if ('file' in payload) {
+      if (onUploadImage) {
+        setIsUploading(true);
+        try {
+          src = await onUploadImage(payload.file);
+        } catch {
+          return;
+        } finally {
+          setIsUploading(false);
+        }
+      } else {
+        src = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.readAsDataURL(payload.file);
+        });
+      }
+    } else {
+      src = payload.url;
+    }
+
+    (editor.chain().focus() as any).setResizableImage({ src, alt: payload.alt ?? '' }).run();
   };
 
   const handleColorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -542,7 +585,9 @@ export default function RichTextEditor({
         </div>
 
         <div className="relative">
-          <ToolbarButton onClick={openImagePopover} active={imagePopoverOpen} title="Insert Image"><ImageIcon size={13} /></ToolbarButton>
+          <ToolbarButton onClick={openImagePopover} active={imagePopoverOpen} disabled={isUploading} title="Insert Image">
+            {isUploading ? <Spinner size="sm" color="current" className="w-3 h-3" /> : <ImageIcon size={13} />}
+          </ToolbarButton>
           <ImagePopover open={imagePopoverOpen} onInsert={insertImage} onClose={() => setImagePopoverOpen(false)} />
         </div>
 
