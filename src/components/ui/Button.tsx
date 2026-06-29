@@ -33,7 +33,7 @@ export default function Button({
     <button
       disabled={disabled || loading}
       className={`relative inline-flex items-center justify-center gap-2 rounded font-medium
-        transition-colors focus:outline-none focus:ring-2 focus:ring-lng-blue focus:ring-offset-1
+        transition-colors focus:outline-none
         ${variantClasses[variant]} ${sizeClasses[size]} ${className}
       `}
       {...props}

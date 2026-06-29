@@ -1,139 +1,116 @@
 import { useNavigate } from 'react-router-dom';
-import { 
-  ChevronDown, ChevronRight, CornerDownRight, Pencil, Trash2 
-} from 'lucide-react';
+import { ChevronRight, Pencil, Trash2 } from 'lucide-react';
 import { type Category } from '../../../../types';
-import Button from '../../../../components/ui/Button';
-import Badge from '../../../../components/ui/Badge';
 import Highlight from '../../../../components/ui/Highlight';
+import Spinner from '../../../../components/ui/Spinner';
 
 interface CategoryCardProps {
   category: Category;
-  isRoot: boolean;
+  /** 0 = root, 1 = subcategory, 2 = child */
+  level: 0 | 1 | 2;
   expanded?: boolean;
   onToggleExpand?: () => void;
-  hasSubcategories?: boolean;
-  subcategoriesCount?: number;
+  hasChildren?: boolean;
+  childrenCount?: number;
   onDelete: () => void;
   isDeleting: boolean;
   searchQuery: string;
 }
 
+
+
 export default function CategoryCard({
   category,
-  isRoot,
+  level,
   expanded,
   onToggleExpand,
-  hasSubcategories,
-  subcategoriesCount,
+  hasChildren,
+  childrenCount,
   onDelete,
   isDeleting,
   searchQuery,
 }: CategoryCardProps) {
   const navigate = useNavigate();
 
-  if (isRoot) {
-    return (
-      <div className="rounded-lg border-l-4 border-lng-blue bg-white p-4 sm:p-5 shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          {/* Toggle + Name group */}
-          <div className="flex flex-1 items-center gap-4 min-w-0">
-            {/* Expand / collapse toggle */}
-            {hasSubcategories && (
-              <div className="flex w-5 shrink-0 items-center justify-center">
-                <button
-                  onClick={onToggleExpand}
-                  className="flex items-center justify-center text-lng-grey transition-colors hover:text-lng-blue"
-                  aria-label={expanded ? 'Collapse subcategories' : 'Expand subcategories'}
-                >
-                  {expanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                </button>
-              </div>
-            )}
+  const isRoot = level === 0;
+  const isSub = level === 1;
 
-            {/* Name + badges */}
-            <div className="flex min-w-0 flex-1 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-3">
-              <span className="truncate font-bold text-lng-grey">
-                <Highlight text={category.name} query={searchQuery} />
-              </span>
-              <div className="flex items-center gap-2">
-                <Badge variant="neutral" className="text-nowrap shrink-0">Order: {category.sort_order}</Badge>
-                <span className="shrink-0 text-xs text-lng-grey opacity-60">
-                  {hasSubcategories
-                    ? `${subcategoriesCount} subcategor${subcategoriesCount === 1 ? 'y' : 'ies'}`
-                    : 'No subcategories'}
-                </span>
-              </div>
-            </div>
-          </div>
+  /* ── padding by level ── */
+  const leftPad = isRoot ? 'pl-4' : isSub ? 'pl-6' : 'pl-8';
 
-          {/* Actions */}
-          <div className="flex shrink-0 gap-2 self-end sm:self-center">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate(`/admin/categories/${category.id}`)}
-              disabled={isDeleting}
-            >
-              <Pencil size={13} />
-              Edit
-            </Button>
-            <Button
-              variant="danger"
-              size="sm"
-              loading={isDeleting}
-              disabled={isDeleting}
-              onClick={onDelete}
-            >
-              <Trash2 size={13} />
-              Delete
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Subcategory card
   return (
-    <div className="rounded border-l-2 border-lng-blue-40 bg-lng-blue-20 p-3 sm:px-4 sm:py-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        {/* Hierarchy + Name group */}
-        <div className="flex flex-1 items-center gap-3 min-w-0">
-          {/* Hierarchy indicator */}
-          <CornerDownRight size={15} className="shrink-0 text-lng-grey opacity-40" />
+    <div
+      className={`flex items-center justify-between gap-3 pr-4 py-3 ${leftPad} ${
+        isDeleting ? 'opacity-60' : ''
+      } hover:bg-gray-50 transition-colors`}
+    >
+      {/* LEFT SIDE */}
+      <div className="flex flex-1 items-center gap-2 min-w-0">
 
-          {/* Name + badge */}
-          <div className="flex min-w-0 flex-1 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-3">
-            <span className="truncate text-sm text-lng-grey">
-              <Highlight text={category.name} query={searchQuery} />
-            </span>
-            <Badge variant="neutral" className="text-nowrap shrink-0">Order: {category.sort_order}</Badge>
-          </div>
-        </div>
+        {/* Expand / collapse chevron */}
+        {hasChildren ? (
+          <button
+            onClick={onToggleExpand}
+            aria-label={expanded ? 'Collapse' : 'Expand'}
+            className="shrink-0 flex items-center justify-center w-6 h-6 rounded hover:bg-gray-200 transition-colors"
+          >
+            <ChevronRight
+              size={15}
+              className="text-gray-500 transition-transform duration-200"
+              style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+            />
+          </button>
+        ) : (
+          /* spacer so name stays aligned */
+          <span className="shrink-0 w-6 h-6" />
+        )}
 
-        {/* Actions */}
-        <div className="flex shrink-0 gap-2 self-end sm:self-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(`/admin/categories/${category.id}`)}
-            disabled={isDeleting}
-          >
-            <Pencil size={13} />
-            Edit
-          </Button>
-          <Button
-            variant="danger"
-            size="sm"
-            loading={isDeleting}
-            disabled={isDeleting}
-            onClick={onDelete}
-          >
-            <Trash2 size={13} />
-            Delete
-          </Button>
-        </div>
+
+
+        {/* Name */}
+        <span
+          className={`truncate ${
+            isRoot ? 'font-semibold text-gray-800 text-sm' : 'font-medium text-gray-700 text-sm'
+          }`}
+        >
+          <Highlight text={category.name} query={searchQuery} />
+        </span>
+
+        {/* "Order N" inline label */}
+        <span className="shrink-0 text-xs text-gray-400 font-normal">
+          Order {category.sort_order}
+        </span>
+
+        {/* Subcategory count pill */}
+        {hasChildren && childrenCount !== undefined && (
+          <span className="shrink-0 inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600 border border-gray-200">
+            {childrenCount} subcategor{childrenCount === 1 ? 'y' : 'ies'}
+          </span>
+        )}
+      </div>
+
+      {/* RIGHT SIDE — actions */}
+      <div className="flex shrink-0 items-center gap-1">
+        <button
+          onClick={() => navigate(`/admin/categories/${category.id}`)}
+          disabled={isDeleting}
+          className="inline-flex items-center gap-1 rounded border border-gray-300 px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
+        >
+          {isRoot && <Pencil size={11} />}
+          Edit
+        </button>
+        <button
+          onClick={onDelete}
+          disabled={isDeleting}
+          className="inline-flex items-center gap-1 rounded border border-gray-300 px-3 py-1 text-xs font-medium text-gray-600 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors disabled:opacity-50"
+        >
+          {isDeleting ? (
+            <Spinner size="sm" color="blue" />
+          ) : isRoot ? (
+            <Trash2 size={11} />
+          ) : null}
+          Delete
+        </button>
       </div>
     </div>
   );

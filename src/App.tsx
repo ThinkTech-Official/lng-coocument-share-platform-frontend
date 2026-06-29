@@ -51,6 +51,7 @@ const UploadVideoPage       = lazy(() => import('./pages/admin/videos/UploadVide
 const VideoDetailPage       = lazy(() => import('./pages/admin/videos/VideoDetailPage'));
 const AdminNotificationsPage = lazy(() => import('./pages/admin/notifications/NotificationsListPage'));
 const PostNotificationPage  = lazy(() => import('./pages/admin/notifications/PostNotificationPage'));
+const NotificationDetailsPage = lazy(() => import('./pages/admin/notifications/NotificationDetailsPage'));
 
 const HomePage             = lazy(() => import('./pages/contractor/NotificationsPage'));
 const DocumentViewerPage   = lazy(() => import('./pages/contractor/DocumentViewerPage'));
@@ -148,6 +149,7 @@ const router = createBrowserRouter(
           <Route path="/admin/videos/:id"            element={<VideoDetailPage />} />
           <Route path="/admin/notifications"         element={<AdminNotificationsPage />} />
           <Route path="/admin/notifications/post"    element={<PostNotificationPage />} />
+          <Route path="/admin/notifications/:id"     element={<NotificationDetailsPage />} />
         </Route>
       </Route>
 

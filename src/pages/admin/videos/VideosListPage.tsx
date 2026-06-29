@@ -4,9 +4,10 @@ import {
   useQuery, useMutation, useQueryClient, keepPreviousData,
 } from '@tanstack/react-query';
 import {
-  Upload, Search, Pencil, Trash2,
-  AlertCircle, Video as VideoIcon, X, Radio, Loader2,
+  Upload, Search,
+  AlertCircle, Video as VideoIcon, X, Loader2,
 } from 'lucide-react';
+
 import toast from 'react-hot-toast';
 import { type Video, VideoUploadStatus, type PaginatedResponse } from '../../../types';
 import { getVideos, updateVideoStatus, deleteVideo } from '../../../api/videos';
@@ -14,11 +15,10 @@ import { getCategoriesPublic } from '../../../api/categories';
 import { getCategoryLabel, flattenCategories } from '../../../utils/categoryHelpers';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
 import EmptyState from '../../../components/ui/EmptyState';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
-import Toggle from '../../../components/ui/Toggle';
 import Pagination from '../../../components/ui/Pagination';
+
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -35,18 +35,21 @@ function SkeletonCard() {
     <div className={`animate-pulse rounded bg-lng-blue-20 ${cls}`} />
   );
   return (
-    <div className="overflow-hidden rounded-lg bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
       <div className="aspect-video animate-pulse bg-lng-blue-20" />
-      <div className="space-y-2 p-4">
-        {bar('h-4 w-3/4')}
-        {bar('h-3 w-1/2')}
-        {bar('h-5 w-24 rounded-full')}
-        {bar('h-3 w-28')}
-      </div>
-      <div className="flex items-center gap-2 border-t border-gray-100 p-4">
-        {bar('h-7 w-14 rounded')}
-        {bar('h-7 w-20 rounded')}
-        <div className="ml-auto">{bar('h-7 w-7 rounded')}</div>
+      <div className="p-4 space-y-3">
+        {bar('h-5 w-3/4')}
+        <div className="flex gap-2">
+          {bar('h-6 w-20 rounded-full')}
+          {bar('h-6 w-24 rounded-full')}
+        </div>
+        <div className="border-t border-gray-100 pt-3 flex items-center justify-between">
+          {bar('h-4 w-28')}
+          <div className="flex gap-2">
+            {bar('h-7 w-14 rounded-lg')}
+            {bar('h-7 w-16 rounded-lg')}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -76,13 +79,13 @@ function VideoCard({
   const isUploading = video.upload_status === VideoUploadStatus.UPLOADING;
   const isReady     = video.upload_status === VideoUploadStatus.READY;
   const catLabel    = getCategoryLabel(video.category);
-  const isUncategorized = !video.category;
+  const isRestricted = video.department_access !== 'ALL';
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-lg bg-white shadow-sm transition-shadow duration-200 hover:shadow-md">
+    <div className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition-shadow duration-200 hover:shadow-md">
 
       {/* ── Thumbnail ──────────────────────────────────────────────────── */}
-      <div className="relative aspect-video overflow-hidden bg-lng-blue-20">
+      <div className="relative aspect-video overflow-hidden bg-[#1a3a4a]">
         {!imgError ? (
           <img
             src={video.thumbnail_sas_url}
@@ -92,139 +95,133 @@ function VideoCard({
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <VideoIcon size={40} className="text-lng-blue-40" />
-          </div>
+          /* Dark teal fallback matching the screenshot */
+          <div className="h-full w-full bg-[#1a3a4a]" />
         )}
 
-        {/* UPLOADING overlay — semi-transparent with spinner */}
+        {/* UPLOADING overlay */}
         {isUploading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
             <Loader2 size={40} className="animate-spin text-white" />
           </div>
         )}
 
-        {/* FAILED overlay — red tint */}
-        {isFailed && (
-          <div className="absolute inset-0 bg-lng-red/30" />
+        {/* FAILED overlay */}
+        {isFailed && <div className="absolute inset-0 bg-lng-red/30" />}
+
+        {/* Centered play button — shown when ready */}
+        {isReady && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 shadow-lg">
+              <svg className="ml-1" width="22" height="22" viewBox="0 0 24 24" fill="#1a3a4a">
+                <polygon points="5,3 19,12 5,21" />
+              </svg>
+            </div>
+          </div>
         )}
 
-        {/* Upload status badge — top left */}
+        {/* Live / Offline badge — top left white pill */}
+        {isReady && (
+          <div className="absolute left-3 top-3">
+            {video.is_live ? (
+              <button
+                onClick={() => onTakeOffline(video)}
+                disabled={isPending}
+                className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-800 shadow hover:bg-gray-100 transition-colors disabled:opacity-60"
+              >
+                <span className="h-2 w-2 rounded-full bg-green-500" />
+                Live
+              </button>
+            ) : (
+              <button
+                onClick={() => onGoLive(video)}
+                disabled={isPending}
+                className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-500 shadow hover:bg-gray-100 transition-colors disabled:opacity-60"
+              >
+                <span className="h-2 w-2 rounded-full bg-gray-400" />
+                Offline
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Uploading badge */}
         {isUploading && (
-          <div className="absolute left-2 top-2">
-            <span className="flex items-center gap-1 rounded-full bg-yellow-400 px-2 py-0.5 text-xs font-medium text-yellow-900">
+          <div className="absolute left-3 top-3">
+            <span className="flex items-center gap-1 rounded-full bg-yellow-400 px-3 py-1 text-xs font-semibold text-yellow-900">
               <Loader2 size={10} className="animate-spin" />
               Uploading...
             </span>
           </div>
         )}
+
+        {/* Failed badge */}
         {isFailed && (
-          <div className="absolute left-2 top-2">
-            <span className="flex items-center gap-1 rounded-full bg-lng-red px-2 py-0.5 text-xs font-medium text-white">
+          <div className="absolute left-3 top-3">
+            <span className="flex items-center gap-1 rounded-full bg-lng-red px-3 py-1 text-xs font-semibold text-white">
               <AlertCircle size={10} />
               Failed
             </span>
           </div>
         )}
-
-        {/* Live status badge — top right (READY only) */}
-        {isReady && (
-          <div className="absolute right-2 top-2">
-            {video.is_live ? (
-              <span className="flex items-center gap-1.5 rounded-full bg-green-500 px-2.5 py-0.5 text-xs font-medium text-white">
-                <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                Live
-              </span>
-            ) : (
-              <span className="rounded-full bg-gray-500 px-2.5 py-0.5 text-xs font-medium text-white">
-                Offline
-              </span>
-            )}
-          </div>
-        )}
       </div>
 
       {/* ── Card body ──────────────────────────────────────────────────── */}
-      <div className="flex-1 p-4">
-        <h3 className="mb-1 line-clamp-2 text-sm font-bold text-lng-grey" title={video.title}>
+      <div className="flex flex-1 flex-col p-4">
+        <h3 className="mb-3 line-clamp-2 text-base font-bold text-gray-900" title={video.title}>
           {video.title}
         </h3>
-        <p className={`mb-2 text-xs ${isUncategorized ? 'italic text-gray-400' : 'text-lng-grey'}`}>
-          {catLabel}
-        </p>
-        <div className="mb-2 flex flex-wrap items-center gap-1.5">
-          {video.department_access === 'ALL' ? (
-            <Badge variant="info">All Departments</Badge>
+
+        {/* Category + access pills */}
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-3 py-0.5 text-xs font-medium text-gray-700">
+            {catLabel}
+          </span>
+          {isRestricted ? (
+            <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-0.5 text-xs font-semibold text-amber-700">
+              Restricted
+            </span>
           ) : (
-            <Badge variant="neutral">Restricted</Badge>
+            <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-3 py-0.5 text-xs font-medium text-gray-700">
+              All Departments
+            </span>
           )}
-          {isFailed && <Badge variant="danger">Upload Failed</Badge>}
+          {isFailed && (
+            <span className="inline-flex items-center rounded-full bg-red-100 px-3 py-0.5 text-xs font-semibold text-red-700">
+              Upload Failed
+            </span>
+          )}
         </div>
-        <p className="text-xs text-gray-400">{formatDate(video.created_at)}</p>
-      </div>
 
-      {/* ── Card footer ────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 border-t border-gray-100 p-4">
+        {/* Divider */}
+        <div className="border-t border-gray-100" />
 
-        {/* Edit */}
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={isPending || isFailed}
-          title={isFailed ? 'Video upload failed delete and re-upload' : undefined}
-          onClick={() => navigate(`/admin/videos/${video.id}`)}
-        >
-          <Pencil size={13} />
-          Edit
-        </Button>
-
-        {/* Live Toggle */}
-        <div className="flex-1">
-          {isReady ? (
-            <Toggle
-              size="sm"
-              label={video.is_live ? "Live" : "Offline"}
-              checked={video.is_live}
-              onChange={(checked) => {
-                if (!checked) onTakeOffline(video);
-                else onGoLive(video);
-              }}
+        {/* Date + actions */}
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <span className="text-sm text-gray-400">{formatDate(video.created_at)}</span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate(`/admin/videos/${video.id}`)}
+              disabled={isPending || isFailed}
+              title={isFailed ? 'Video upload failed — delete and re-upload' : undefined}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => onDelete(video)}
               disabled={isPending}
-            />
-          ) : (
-            <div className="flex items-center gap-1.5 text-xs text-gray-400">
-              <Radio size={12} />
-              {isUploading ? 'Uploading…' : 'Not Ready'}
-            </div>
-          )}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors disabled:opacity-50"
+            >
+              Delete
+            </button>
+          </div>
         </div>
-
-        {/* Delete — icon-only for normal cards, full danger button for FAILED */}
-        {isFailed ? (
-          <Button
-            variant="danger"
-            size="sm"
-            disabled={isPending}
-            onClick={() => onDelete(video)}
-            className="ml-auto"
-          >
-            <Trash2 size={13} />
-            Delete
-          </Button>
-        ) : (
-          <button
-            title="Delete"
-            disabled={isPending}
-            onClick={() => onDelete(video)}
-            className="ml-auto rounded p-1.5 text-lng-red transition-colors hover:bg-red-50 disabled:opacity-40"
-          >
-            <Trash2 size={15} />
-          </button>
-        )}
       </div>
     </div>
   );
 }
+
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 

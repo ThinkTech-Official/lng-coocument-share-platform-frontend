@@ -306,7 +306,7 @@ export default function ContractorLayout() {
         key={group.id}
         className="bg-[#fafafa] border-8 border-[#E9EDEF] p-4"
       >
-        <h3 className="text-[15px] font-bold text-lng-blue uppercase tracking-wider mb-2 pb-1 border-b border-gray-200">
+        <h3 className="text-[16px] font-bold text-lng-blue uppercase tracking-wider mb-2 pb-1 border-b border-gray-200">
           {group.label}
         </h3>
 
@@ -330,9 +330,8 @@ export default function ContractorLayout() {
               >
                 <ChevronDown
                   size={16}
-                  className={`transform transition-transform duration-200 ${
-                    isSubCollapsed ? '-rotate-90' : 'rotate-0'
-                  }`}
+                  className={`transform transition-transform duration-200 ${isSubCollapsed ? '-rotate-90' : 'rotate-0'
+                    }`}
                 />
                 {sub.label}
               </h4>
@@ -341,7 +340,7 @@ export default function ContractorLayout() {
                 <>
                   {/* Items directly in this subcategory */}
                   {sub.items.length > 0 && (
-                    <ul className="space-y-1.5 pl-4 mb-2">
+                    <ul className="space-y-1.5 pl-5 mb-2">
                       {sub.items.map((item) => renderSidebarItem(item))}
                     </ul>
                   )}
@@ -359,9 +358,8 @@ export default function ContractorLayout() {
                         >
                           <ChevronDown
                             size={12}
-                            className={`transform transition-transform duration-200 ${
-                              isChildCollapsed ? '-rotate-90' : 'rotate-0'
-                            }`}
+                            className={`transform transition-transform duration-200 ${isChildCollapsed ? '-rotate-90' : 'rotate-0'
+                              }`}
                           />
                           {child.label}
                         </h5>
@@ -383,7 +381,7 @@ export default function ContractorLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-white font-sans flex flex-col">
+    <div>
       {/* Top menu bar */}
       <header className="flex h-11 items-center justify-between bg-lng-blue px-6 text-white text-xs">
         <div className="flex items-center gap-4">
@@ -405,172 +403,176 @@ export default function ContractorLayout() {
           </button>
         </div>
       </header>
+      <div className="min-h-screen bg-white font-sans flex flex-col max-w-[1560px] mx-auto">
 
-      {/* Central Header Zone */}
-      <div className="bg-white py-3 sm:py-5 px-8 flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-black text-lng-red tracking-tight uppercase">
-            LNG<span className="text-lng-blue"> CANADA</span>
-          </h1>
-          <p className="text-xs font-semibold text-lng-grey tracking-wide uppercase mt-0.5">
-            Contractor Resource Site
-          </p>
-        </div>
-        {/* Search bar */}
-        <div className="flex justify-end px-3 py-1">
-          <div className="relative flex items-center">
-            <input
-              type="text"
-              placeholder="Search documents & videos..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-gray-50 hover:bg-gray-100 focus:bg-white text-gray-800 placeholder-gray-400 text-xs px-3 py-2 pl-8 pr-8 rounded-sm border border-gray-400 focus:border-lng-blue focus:outline-none focus:border-2 w-48 sm:w-60 transition-all font-normal normal-case peer"
-            />
-            <Search
-              size={12}
-              className="absolute left-2.5 pointer-events-none transition-colors text-gray-400 peer-focus:text-lng-blue"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  setSearchQuery('');
-                }}
-                className="absolute right-2.5 focus:outline-none cursor-pointer flex items-center justify-center"
-              >
-                <X size={14} className="text-gray-600 hover:text-gray-800" />
-              </button>
-            )}
+
+        {/* Central Header Zone */}
+        <div className="bg-white py-3 sm:py-5 px-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-black text-lng-red tracking-tight uppercase">
+              LNG<span className="text-lng-blue"> CANADA</span>
+            </h1>
+            <p className="text-xs font-semibold text-lng-grey tracking-wide uppercase mt-0.5">
+              Contractor Resource Site
+            </p>
+          </div>
+          {/* Search bar */}
+          <div className="flex justify-end px-3 py-1">
+            <div className="relative flex items-center">
+              <input
+                type="text"
+                placeholder="Search documents & videos..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-gray-50 hover:bg-gray-100 focus:bg-white text-gray-800 placeholder-gray-400 text-xs px-3 py-2 pl-8 pr-8 rounded-sm border border-gray-400 focus:border-lng-blue focus:outline-none focus:border-2 w-48 sm:w-60 transition-all font-normal normal-case peer"
+              />
+              <Search
+                size={12}
+                className="absolute left-2.5 pointer-events-none transition-colors text-gray-400 peer-focus:text-lng-blue"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    setSearchQuery('');
+                  }}
+                  className="absolute right-2.5 focus:outline-none cursor-pointer flex items-center justify-center"
+                >
+                  <X size={14} className="text-gray-600 hover:text-gray-800" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="px-6">
-        <WeatherCards />
-      </div>
-
+        <div className="px-6">
+          <WeatherCards />
+        </div>
 
 
-      {/* Main 3-Column Content Layout */}
-      <div className="flex-1 max-w-[1600px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-3 p-3 sm:p-6">
 
-        {/* Left Sidebar */}
-        <aside className="lg:col-span-3 order-2 lg:order-1">
-          {isInitialLoading ? (
-            <SidebarSkeleton />
-          ) : (
-            <div className='rounded-md border-2 border-[#E9EDEF]'>{leftGroups.map((group) => renderGroupSidebar(group))}</div>
-          )}
-          {isFetchingNext && (
-            <div className="flex justify-center py-3">
-              <Spinner size="sm" />
-            </div>
-          )}
-        </aside>
+        {/* Main 3-Column Content Layout */}
+        <div className="flex-1 max-w-[1600px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-3 p-3 sm:p-6">
 
-        {/* Center Section */}
-        <main className="lg:col-span-6 flex flex-col bg-white border border-gray-100 rounded-sm shadow-sm p-2 sm:p-3 min-h-[500px] order-1 lg:order-2">
-          {searchQuery.trim() !== '' ? (
-            <div className="flex flex-col h-full flex-1 gap-4">
-              <div className="border-b border-gray-100 pb-3 flex justify-between items-center">
-                <h2 className="text-sm font-extrabold text-lng-blue uppercase tracking-wider">
-                  {isSearchLoading
-                    ? 'Searching...'
-                    : `${searchResults.length} Search Results`}
-                </h2>
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="text-xs text-lng-red hover:underline font-bold uppercase cursor-pointer"
-                >
-                  Clear
-                </button>
+          {/* Left Sidebar */}
+          <aside className="lg:col-span-3 order-2 lg:order-1">
+            {isInitialLoading ? (
+              <SidebarSkeleton />
+            ) : (
+              <div className='rounded-md border-2 border-[#E9EDEF]'>{leftGroups.map((group) => renderGroupSidebar(group))}</div>
+            )}
+            {isFetchingNext && (
+              <div className="flex justify-center py-3">
+                <Spinner size="sm" />
               </div>
+            )}
+          </aside>
 
-              <div className="space-y-3 flex-1 overflow-y-auto">
-                {isSearchLoading ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center text-lng-grey gap-2">
-                    <Spinner size="md" />
-                    <p className="text-xs">Searching...</p>
-                  </div>
-                ) : searchResults.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center text-lng-grey gap-2">
-                    <FileText size={32} className="text-gray-300" />
-                    <p className="text-xs">No results found matching &ldquo;{searchQuery}&rdquo;</p>
-                  </div>
-                ) : (
-                  searchResults.map((item) => {
-                    const to = linkFor(item);
-                    const isVideo = item.type === 'video';
-                    const itemIsLink = isLinkDoc(item);
-                    const cardContent = (
-                      <div className="flex items-start gap-2.5">
-                        <div className={`p-1.5 rounded-sm transition-colors mt-0.5 ${isVideo
-                          ? 'bg-lng-orange/10 text-lng-orange group-hover:bg-lng-orange group-hover:text-white'
-                          : 'bg-lng-blue/10 text-lng-blue group-hover:bg-lng-blue group-hover:text-white'
-                          }`}>
-                          {isVideo ? <Video size={14} /> : <FileText size={14} />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`text-xs font-bold text-gray-800 transition-colors ${isVideo ? 'group-hover:text-lng-orange' : 'group-hover:text-lng-blue'}`}>
-                              {item.title}
-                            </span>
-                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${isVideo ? 'text-lng-orange bg-lng-orange/10' : 'text-lng-blue bg-lng-blue/10'}`}>
-                              {isVideo ? 'Video' : 'Document'}
-                            </span>
-                            {itemIsLink && (
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm uppercase tracking-wider text-lng-blue bg-lng-blue/10 inline-flex items-center gap-0.5">
-                                <ExternalLink size={8} />
-                                External
+          {/* Center Section */}
+          <main className="lg:col-span-6 flex flex-col bg-white border border-gray-100 rounded-sm shadow-sm p-2 sm:p-3 min-h-[500px] order-1 lg:order-2">
+            {searchQuery.trim() !== '' ? (
+              <div className="flex flex-col h-full flex-1 gap-4">
+                <div className="border-b border-gray-100 pb-3 flex justify-between items-center">
+                  <h2 className="text-sm font-extrabold text-lng-blue uppercase tracking-wider">
+                    {isSearchLoading
+                      ? 'Searching...'
+                      : `${searchResults.length} Search Results`}
+                  </h2>
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="text-xs text-lng-red hover:underline font-bold uppercase cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                </div>
+
+                <div className="space-y-3 flex-1 overflow-y-auto">
+                  {isSearchLoading ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center text-lng-grey gap-2">
+                      <Spinner size="md" />
+                      <p className="text-xs">Searching...</p>
+                    </div>
+                  ) : searchResults.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center text-lng-grey gap-2">
+                      <FileText size={32} className="text-gray-300" />
+                      <p className="text-xs">No results found matching &ldquo;{searchQuery}&rdquo;</p>
+                    </div>
+                  ) : (
+                    searchResults.map((item) => {
+                      const to = linkFor(item);
+                      const isVideo = item.type === 'video';
+                      const itemIsLink = isLinkDoc(item);
+                      const cardContent = (
+                        <div className="flex items-start gap-2.5">
+                          <div className={`p-1.5 rounded-sm transition-colors mt-0.5 ${isVideo
+                            ? 'bg-lng-orange/10 text-lng-orange group-hover:bg-lng-orange group-hover:text-white'
+                            : 'bg-lng-blue/10 text-lng-blue group-hover:bg-lng-blue group-hover:text-white'
+                            }`}>
+                            {isVideo ? <Video size={14} /> : <FileText size={14} />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`text-xs font-bold text-gray-800 transition-colors ${isVideo ? 'group-hover:text-lng-orange' : 'group-hover:text-lng-blue'}`}>
+                                {item.title}
                               </span>
-                            )}
-                            {item.category?.name && (
-                              <span className="text-[9px] font-bold text-lng-red bg-lng-red/10 px-1.5 py-0.5 rounded-sm uppercase tracking-wider">
-                                {item.category.name}
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${isVideo ? 'text-lng-orange bg-lng-orange/10' : 'text-lng-blue bg-lng-blue/10'}`}>
+                                {isVideo ? 'Video' : 'Document'}
                               </span>
-                            )}
+                              {itemIsLink && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm uppercase tracking-wider text-lng-blue bg-lng-blue/10 inline-flex items-center gap-0.5">
+                                  <ExternalLink size={8} />
+                                  External
+                                </span>
+                              )}
+                              {item.category?.name && (
+                                <span className="text-[9px] font-bold text-lng-red bg-lng-red/10 px-1.5 py-0.5 rounded-sm uppercase tracking-wider">
+                                  {item.category.name}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                    return (
-                      <Link
-                        key={`${item.type}-${item.id}`}
-                        to={to}
-                        onClick={() => setSearchQuery('')}
-                        className={`block p-3 border border-gray-100 rounded-sm transition-all group ${isVideo
-                          ? 'hover:border-lng-orange/40 hover:bg-lng-orange/5'
-                          : 'hover:border-lng-blue/40 hover:bg-lng-blue/5'
-                          }`}
-                      >
-                        {cardContent}
-                      </Link>
-                    );
-                  })
-                )}
+                      );
+                      return (
+                        <Link
+                          key={`${item.type}-${item.id}`}
+                          to={to}
+                          onClick={() => setSearchQuery('')}
+                          className={`block p-3 border border-gray-100 rounded-sm transition-all group ${isVideo
+                            ? 'hover:border-lng-orange/40 hover:bg-lng-orange/5'
+                            : 'hover:border-lng-blue/40 hover:bg-lng-blue/5'
+                            }`}
+                        >
+                          {cardContent}
+                        </Link>
+                      );
+                    })
+                  )}
+                </div>
               </div>
-            </div>
-          ) : (
-            <Outlet />
-          )}
-        </main>
+            ) : (
+              <Outlet />
+            )}
+          </main>
 
-        {/* Right Sidebar */}
-        <aside className="lg:col-span-3 order-3 lg:order-3">
-          {isInitialLoading ? (
-            <SidebarSkeleton />
-          ) : (
-            <div className='rounded-md border-2 border-[#E9EDEF]'>{rightGroups.map((group) => renderGroupSidebar(group))}</div>
-          )}
-          {isFetchingNext && (
-            <div className="flex justify-center py-3">
-              <Spinner size="sm" />
-            </div>
-          )}
-        </aside>
+          {/* Right Sidebar */}
+          <aside className="lg:col-span-3 order-3 lg:order-3">
+            {isInitialLoading ? (
+              <SidebarSkeleton />
+            ) : (
+              <div className='rounded-md border-2 border-[#E9EDEF]'>{rightGroups.map((group) => renderGroupSidebar(group))}</div>
+            )}
+            {isFetchingNext && (
+              <div className="flex justify-center py-3">
+                <Spinner size="sm" />
+              </div>
+            )}
+          </aside>
 
+        </div>
       </div>
     </div>
+
   );
 }

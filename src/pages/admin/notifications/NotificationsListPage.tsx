@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
-  Plus, Search, Trash2, Bell, AlertCircle, Calendar
+  Plus, Search, Trash2, Bell, AlertCircle, Calendar, ChevronRight
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -12,7 +12,6 @@ import Button from '../../../components/ui/Button';
 import EmptyState from '../../../components/ui/EmptyState';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import Pagination from '../../../components/ui/Pagination';
-import ContentRenderer from '../../../components/ui/MarkdownRenderer';
 import { deleteNotification, getNotifications } from '../../../api/Notifications';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -22,152 +21,87 @@ function formatDate(iso: string) {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
   });
 }
 
-const categoryStyles: Record<string, { border: string; badgeBg: string; label: string }> = {
-  info: {
-    border: 'border-l-4 border-lng-blue border-y border-r border-gray-150',
-    badgeBg: 'bg-lng-blue/10 text-lng-blue',
-    label: 'Info',
-  },
-  warning: {
-    border: 'border-l-4 border-lng-orange border-y border-r border-gray-150',
-    badgeBg: 'bg-lng-orange/10 text-lng-orange',
-    label: 'Warning',
-  },
-  danger: {
-    border: 'border-l-4 border-lng-red border-y border-r border-gray-150',
-    badgeBg: 'bg-lng-red/10 text-lng-red',
-    label: 'Danger',
-  },
-  success: {
-    border: 'border-l-4 border-emerald-500 border-y border-r border-gray-150',
-    badgeBg: 'bg-emerald-50 text-emerald-700',
-    label: 'Success',
-  },
-  'blue-dark': {
-    border: 'border-l-4 border-blue-700 border-y border-r border-gray-150',
-    badgeBg: 'bg-blue-700 text-white font-bold',
-    label: 'Blue',
-  },
-  'red-dark': {
-    border: 'border-l-4 border-red-700 border-y border-r border-gray-150',
-    badgeBg: 'bg-red-700 text-white font-bold',
-    label: 'Red',
-  },
-  'orange-dark': {
-    border: 'border-l-4 border-orange-600 border-y border-r border-gray-150',
-    badgeBg: 'bg-orange-600 text-white font-bold',
-    label: 'Orange',
-  },
-  'yellow-dark': {
-    border: 'border-l-4 border-yellow-500 border-y border-r border-gray-150',
-    badgeBg: 'bg-yellow-500 text-slate-900 font-bold',
-    label: 'Yellow',
-  },
-  'green-dark': {
-    border: 'border-l-4 border-emerald-600 border-y border-r border-gray-150',
-    badgeBg: 'bg-emerald-600 text-white font-bold',
-    label: 'Green',
-  },
-  'black-dark': {
-    border: 'border-l-4 border-slate-900 border-y border-r border-gray-150',
-    badgeBg: 'bg-slate-900 text-white font-bold',
-    label: 'Black',
-  },
-  // ── simplified keys (current category set) ──
-  blue: {
-    border: 'border-l-4 border-blue-700 border-y border-r border-gray-150',
-    badgeBg: 'bg-blue-700 text-white font-bold',
-    label: 'Blue',
-  },
-  red: {
-    border: 'border-l-4 border-red-700 border-y border-r border-gray-150',
-    badgeBg: 'bg-red-700 text-white font-bold',
-    label: 'Red',
-  },
-  orange: {
-    border: 'border-l-4 border-orange-600 border-y border-r border-gray-150',
-    badgeBg: 'bg-orange-600 text-white font-bold',
-    label: 'Orange',
-  },
-  yellow: {
-    border: 'border-l-4 border-yellow-500 border-y border-r border-gray-150',
-    badgeBg: 'bg-yellow-500 text-slate-900 font-bold',
-    label: 'Yellow',
-  },
-  green: {
-    border: 'border-l-4 border-emerald-600 border-y border-r border-gray-150',
-    badgeBg: 'bg-emerald-600 text-white font-bold',
-    label: 'Green',
-  },
-  black: {
-    border: 'border-l-4 border-slate-900 border-y border-r border-gray-150',
-    badgeBg: 'bg-slate-900 text-white font-bold',
-    label: 'Black',
-  },
+const categoryStyles: Record<string, { accentBg: string; badgeBg: string; label: string }> = {
+  info:       { accentBg: 'bg-lng-blue',    badgeBg: 'bg-lng-blue/10 text-lng-blue',          label: 'Info' },
+  warning:    { accentBg: 'bg-lng-orange',  badgeBg: 'bg-lng-orange/10 text-lng-orange',       label: 'Warning' },
+  danger:     { accentBg: 'bg-lng-red',     badgeBg: 'bg-lng-red/10 text-lng-red',             label: 'Danger' },
+  success:    { accentBg: 'bg-emerald-500', badgeBg: 'bg-emerald-50 text-emerald-700',         label: 'Success' },
+  blue:       { accentBg: 'bg-blue-700',    badgeBg: 'bg-blue-700 text-white font-bold',       label: 'Blue' },
+  red:        { accentBg: 'bg-red-700',     badgeBg: 'bg-red-700 text-white font-bold',        label: 'Red' },
+  orange:     { accentBg: 'bg-orange-600',  badgeBg: 'bg-orange-600 text-white font-bold',     label: 'Orange' },
+  yellow:     { accentBg: 'bg-yellow-500',  badgeBg: 'bg-yellow-500 text-slate-900 font-bold', label: 'Yellow' },
+  green:      { accentBg: 'bg-emerald-600', badgeBg: 'bg-emerald-600 text-white font-bold',    label: 'Green' },
+  black:      { accentBg: 'bg-slate-900',   badgeBg: 'bg-slate-900 text-white font-bold',      label: 'Black' },
 };
 
-// ─── Skeleton Card ────────────────────────────────────────────────────────────
+// ─── Skeleton Row ─────────────────────────────────────────────────────────────
 
-function SkeletonCard() {
+function SkeletonRow() {
   const bar = (cls: string) => (
     <div className={`animate-pulse rounded bg-gray-200 ${cls}`} />
   );
   return (
-    <div className="flex flex-col rounded bg-white p-5 shadow-sm border-l-4 border-gray-300 border-y border-r">
-      <div className="mb-2 flex items-center justify-between">
-        {bar('h-4 w-16')}
-        {bar('h-3 w-32')}
+    <div className="flex items-center gap-4 border-b border-gray-100 px-5 py-4 last:border-0">
+      <div className="w-1 self-stretch rounded-full bg-gray-200 animate-pulse shrink-0" />
+      <div className="flex-1 space-y-2">
+        {bar('h-4 w-2/3')}
+        {bar('h-3 w-1/4')}
       </div>
-      <div className="space-y-2 mb-4">
-        {bar('h-5 w-3/4')}
-        {bar('h-4 w-full')}
-        {bar('h-4 w-5/6')}
-      </div>
-      <div className="mt-auto pt-2">
-        {bar('h-7 w-20 rounded')}
-      </div>
+      {bar('h-5 w-14 rounded')}
+      {bar('h-3 w-20')}
+      {bar('h-6 w-6 rounded')}
     </div>
   );
 }
 
-// ─── Notification Item Card ───────────────────────────────────────────────────
+// ─── Notification List Row ────────────────────────────────────────────────────
 
-interface NotificationCardProps {
+interface NotificationRowProps {
   notification: Notification;
   onDelete: () => void;
   deleting: boolean;
+  onView: () => void;
 }
 
-function NotificationCard({ notification, onDelete, deleting }: NotificationCardProps) {
+function NotificationRow({ notification, onDelete, deleting, onView }: NotificationRowProps) {
   const style = categoryStyles[notification.category] || categoryStyles.info;
 
   return (
-    <div className={`flex flex-col rounded bg-white p-5 shadow-sm transition-shadow hover:shadow-md ${style.border}`}>
-      <div className="mb-2.5 flex items-center justify-between text-xs">
-        <span className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${style.badgeBg}`}>
-          {style.label}
-        </span>
-        <span className="flex items-center gap-1 text-gray-400">
-          <Calendar size={12} />
-          {formatDate(notification.created_at)}
-        </span>
-      </div>
-      <h3 className="mb-3 text-sm font-bold text-lng-grey break-words">
-        {notification.title}
-      </h3>
-      <div className="mb-4 text-xs text-lng-grey space-y-2 border-t border-gray-50 pt-3">
-        <ContentRenderer content={notification.content} />
-      </div>
-      <div className="mt-auto pt-2 border-t border-gray-100 flex justify-end">
-        <Button variant="danger" size="sm" onClick={onDelete} disabled={deleting}>
-          <Trash2 size={13} />
-          Delete
-        </Button>
+    <div
+      className="group relative flex items-center border-b border-gray-100 last:border-0 transition-colors hover:bg-gray-50 cursor-pointer overflow-hidden"
+      onClick={onView}
+    >
+      {/* Coloured accent bar — separate element avoids border-color conflicts */}
+      <div className={`shrink-0 self-stretch w-1 ${style.accentBg}`} />
+
+      {/* Row content */}
+      <div className="flex flex-1 items-center gap-4 px-5 py-4 min-w-0">
+        {/* Title + date stacked */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-lng-grey break-all leading-snug">
+            {notification.title}
+          </p>
+          <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-400">
+            <Calendar size={11} />
+            {formatDate(notification.created_at)}
+          </p>
+        </div>
+
+        {/* Delete */}
+        <button
+          className="shrink-0 rounded p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-lng-red disabled:opacity-40"
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          disabled={deleting}
+          aria-label="Delete notification"
+          title="Delete"
+        >
+          <Trash2 size={15} />
+        </button>
+
+        <ChevronRight size={15} className="shrink-0 text-gray-300 group-hover:text-gray-500 transition-colors" />
       </div>
     </div>
   );
@@ -184,7 +118,7 @@ export default function NotificationsListPage() {
   const [deleteTarget, setDeleteTarget] = useState<Notification | null>(null);
 
   useEffect(() => {
-    document.title = 'Notifications LNG Canada';
+    document.title = 'Notifications – LNG Canada';
     return () => { document.title = 'LNG Canada'; };
   }, []);
 
@@ -201,7 +135,7 @@ export default function NotificationsListPage() {
 
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
     queryKey: ['admin-notifications', { page, search: debouncedSearch }],
-    queryFn: () => getNotifications({ page, limit: 6, search: debouncedSearch || undefined }),
+    queryFn: () => getNotifications({ page, limit: 10, search: debouncedSearch || undefined }),
     placeholderData: keepPreviousData,
   });
 
@@ -246,7 +180,7 @@ export default function NotificationsListPage() {
         />
         <input
           type="search"
-          placeholder="Search previous notifications"
+          placeholder="Search notifications…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full rounded border border-gray-300 py-2 pl-9 pr-3 text-sm text-lng-grey placeholder:text-gray-400 focus:border-lng-blue focus:outline-none focus:ring-1 focus:ring-lng-blue"
@@ -255,8 +189,8 @@ export default function NotificationsListPage() {
 
       {/* Loading Skeletons */}
       {isLoading && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+        <div className="overflow-hidden rounded-lg bg-white shadow-sm border border-gray-100">
+          {Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)}
         </div>
       )}
 
@@ -298,12 +232,13 @@ export default function NotificationsListPage() {
       {!isLoading && !isError && notifications.length > 0 && (
         <>
           <div
-            className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 transition-opacity duration-200 ${isFetching ? 'opacity-60' : 'opacity-100'}`}
+            className={`overflow-hidden rounded-lg bg-white shadow-sm border border-gray-100 transition-opacity duration-200 ${isFetching ? 'opacity-60' : 'opacity-100'}`}
           >
             {notifications.map((notif) => (
-              <NotificationCard
+              <NotificationRow
                 key={notif.id}
                 notification={notif}
+                onView={() => navigate(`/admin/notifications/${notif.id}`)}
                 onDelete={() => setDeleteTarget(notif)}
                 deleting={deleteMutation.isPending && deleteTarget?.id === notif.id}
               />
@@ -332,4 +267,3 @@ export default function NotificationsListPage() {
     </>
   );
 }
-
