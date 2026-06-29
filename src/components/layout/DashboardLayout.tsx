@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, Menu, ChevronLeft, ChevronRight,type LucideIcon } from 'lucide-react';
+import { LogOut, Menu, ChevronLeft, ChevronRight, type LucideIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/authStore';
 
@@ -18,7 +18,7 @@ export default function DashboardLayout({ navItems, portalName }: DashboardLayou
   const { user, clearAuth } = useAuthStore();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  
+
   const pageTitle = navItems.find((item) => pathname.startsWith(item.to))?.label ?? portalName;
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 640);
 
@@ -70,8 +70,8 @@ export default function DashboardLayout({ navItems, portalName }: DashboardLayou
                 <span className="text-lng-red"> CANADA</span>
               </span>
             </div>
-            
-            <button 
+
+            <button
               onClick={toggleSidebar}
               className="text-white/70 hover:text-white transition-colors cursor-pointer"
               title={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
@@ -97,10 +97,9 @@ export default function DashboardLayout({ navItems, portalName }: DashboardLayou
               to={to}
               onClick={() => window.innerWidth < 640 && setIsSidebarOpen(false)}
               className={({ isActive }) =>
-                `flex items-center gap-3 border-l-4 px-6 py-3 text-sm transition-colors whitespace-nowrap ${
-                  isActive
-                    ? 'border-lng-red bg-white/10 text-white'
-                    : 'border-transparent text-white/70 hover:bg-white/5 hover:text-white'
+                `flex items-center gap-3 border-l-4 px-6 py-3 text-sm transition-colors whitespace-nowrap ${isActive
+                  ? 'border-lng-red bg-white/10 text-white'
+                  : 'border-transparent text-white/70 hover:bg-white/5 hover:text-white'
                 } ${!isSidebarOpen ? 'sm:justify-center sm:px-0 sm:border-l-0' : ''}`
               }
               title={!isSidebarOpen ? label : ''}
@@ -112,7 +111,11 @@ export default function DashboardLayout({ navItems, portalName }: DashboardLayou
             </NavLink>
           ))}
         </nav>
-
+        <div className='w-full overflow-hidden'>
+          <div className='w-[155%] -ml-3'>
+          <img src="/6d5a2b8c4dede1dbf9939be49a823a9503741e63.png" alt="" className='opacity-30 -mb-2.5' />
+        </div>
+        </div>
         {/* User / logout */}
         <div className={`border-t border-white/10 px-6 py-4 transition-all duration-300 ${!isSidebarOpen ? 'sm:px-2 sm:flex sm:flex-col sm:items-center' : ''}`}>
           <p className={`truncate text-xs text-white/50 mb-2 transition-opacity ${isSidebarOpen ? 'opacity-100' : 'sm:hidden'}`}>

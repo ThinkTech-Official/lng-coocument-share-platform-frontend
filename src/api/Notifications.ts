@@ -40,3 +40,23 @@ export const uploadNotificationImage = async (
   );
   return data;
 };
+
+export const getNotificationById = async (id: string) => {
+  await delay(200); // simulate network latency
+  const all = getStoredNotifications();
+  return all.find((n) => n.id === id) || null;
+};
+
+export const updateNotification = async (
+  id: string,
+  data: { title: string; content: string; category: NotificationCategory }
+) => {
+  await delay(400); // simulate network latency
+  const all = getStoredNotifications();
+  const idx = all.findIndex((n) => n.id === id);
+  if (idx === -1) throw new Error('Notification not found');
+  all[idx] = { ...all[idx], ...data };
+  saveNotifications(all);
+  return all[idx];
+};
+

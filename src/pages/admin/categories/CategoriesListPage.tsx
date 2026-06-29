@@ -46,7 +46,7 @@ export default function CategoriesListPage() {
         actions={
           <Button variant="primary" onClick={() => navigate('/admin/categories/create')}>
             <Plus size={15} />
-            Create Category
+            Create category
           </Button>
         }
       />
@@ -54,11 +54,7 @@ export default function CategoriesListPage() {
       <CategorySearch value={search} onChange={setSearch} />
 
       {/* Loading skeletons */}
-      {isLoading && (
-        <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_, i) => <CategorySkeleton key={i} />)}
-        </div>
-      )}
+      {isLoading && <CategorySkeleton />}
 
       {/* Error state */}
       {isError && (
@@ -95,23 +91,24 @@ export default function CategoriesListPage() {
         />
       )}
 
-      {/* Category tree */}
+      {/* Category tree — flat list in a white card */}
       {!isLoading && !isError && filtered.length > 0 && (
-        <div className="space-y-3">
-          {filtered.map((cat) => {
+        <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
+          {filtered.map((cat, catIdx) => {
             const hasSubs = cat.subcategories.length > 0;
             const expanded = isExpanded(cat.id);
             const isDeleting = deleteMutation.isPending && deleteTarget?.id === cat.id;
 
             return (
-              <div key={cat.id}>
+              <div key={cat.id} className={catIdx > 0 ? 'border-t border-gray-100' : ''}>
+                {/* Root category row */}
                 <CategoryCard
                   category={cat}
-                  isRoot={true}
+                  level={0}
                   expanded={expanded}
                   onToggleExpand={() => toggleExpand(cat.id)}
-                  hasSubcategories={hasSubs}
-                  subcategoriesCount={cat.subcategories.length}
+                  hasChildren={hasSubs}
+                  childrenCount={cat.subcategories.length}
                   searchQuery={debouncedSearch}
                   isDeleting={isDeleting}
                   onDelete={() => setDeleteTarget({ id: cat.id, name: cat.name, level: 'root' })}
@@ -122,40 +119,56 @@ export default function CategoriesListPage() {
                   style={{
                     maxHeight: expanded ? '9999px' : '0',
                     overflow: 'hidden',
-                    transition: 'max-height 0.25s ease',
+                    transition: 'max-height 0.3s ease',
                   }}
                 >
                   {hasSubs && (
-                    <div className="ml-6 sm:ml-12 mt-2 space-y-2">
+                    <div className="border-t border-gray-100 border-l-2 border-l-gray-200 ml-10">
                       {cat.subcategories.map((sub) => {
                         const isSubDeleting = deleteMutation.isPending && deleteTarget?.id === sub.id;
                         const hasChildren = (sub.subcategories ?? []).length > 0;
+                        const subExpanded = isExpanded(sub.id);
+
                         return (
                           <div key={sub.id}>
                             <CategoryCard
                               category={sub}
-                              isRoot={false}
+                              level={1}
+                              expanded={subExpanded}
+                              onToggleExpand={() => toggleExpand(sub.id)}
+                              hasChildren={hasChildren}
+                              childrenCount={(sub.subcategories ?? []).length}
                               searchQuery={debouncedSearch}
                               isDeleting={isSubDeleting}
                               onDelete={() => setDeleteTarget({ id: sub.id, name: sub.name, level: 'sub' })}
                             />
-                            {hasChildren && (
-                              <div className="ml-6 sm:ml-12 mt-2 space-y-2">
-                                {(sub.subcategories ?? []).map((child) => {
-                                  const isChildDeleting = deleteMutation.isPending && deleteTarget?.id === child.id;
-                                  return (
-                                    <CategoryCard
-                                      key={child.id}
-                                      category={child}
-                                      isRoot={false}
-                                      searchQuery={debouncedSearch}
-                                      isDeleting={isChildDeleting}
-                                      onDelete={() => setDeleteTarget({ id: child.id, name: child.name, level: 'child' })}
-                                    />
-                                  );
-                                })}
-                              </div>
-                            )}
+
+                            {/* Child categories */}
+                            <div
+                              style={{
+                                maxHeight: subExpanded ? '9999px' : '0',
+                                overflow: 'hidden',
+                                transition: 'max-height 0.3s ease',
+                              }}
+                            >
+                              {hasChildren && (
+                                <div className="border-t border-gray-100 border-l-2 border-l-gray-200 ml-10">
+                                  {(sub.subcategories ?? []).map((child) => {
+                                    const isChildDeleting = deleteMutation.isPending && deleteTarget?.id === child.id;
+                                    return (
+                                      <CategoryCard
+                                        key={child.id}
+                                        category={child}
+                                        level={2}
+                                        searchQuery={debouncedSearch}
+                                        isDeleting={isChildDeleting}
+                                        onDelete={() => setDeleteTarget({ id: child.id, name: child.name, level: 'child' })}
+                                      />
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         );
                       })}

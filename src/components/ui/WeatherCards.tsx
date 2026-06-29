@@ -94,6 +94,7 @@ export default function WeatherCards() {
   const [airQuality, setAirQuality] = useState<any>(null);
   const [forecast, setForecast] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const weatherType: WeatherData['type'] = weather?.weather?.[0]?.id
     ? mapWeatherType(weather.weather[0].id)
@@ -115,6 +116,7 @@ export default function WeatherCards() {
 
         const weatherData = weatherRes.data;
         setWeather(weatherData);
+        setLastUpdated(new Date(weatherData.dt * 1000));
 
         const lat = weatherData.coord.lat;
         const lon = weatherData.coord.lon;
@@ -201,13 +203,22 @@ export default function WeatherCards() {
 };
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
-
-      {/* 3. Current Weather Card */}
-      <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br bg-white p-5 border shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 ${getBgGradient(weatherType)}`}>
-        <div className="absolute right-4 top-4">
-          {getWeatherIcon(weatherType, 'transition-transform duration-500 hover:scale-110')}
+    <div className=''>
+      {lastUpdated && (
+        <div className="flex items-center justify-end gap-2 text-sm">
+          <span className="text-slate-700">Updated:</span>
+          <span className="tabular-nums text-slate-400">
+            {lastUpdated.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}
+          </span>
         </div>
+      )}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6 mt-2">
+
+        {/* 3. Current Weather Card */}
+        <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br bg-white p-5 border shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 ${getBgGradient(weatherType)}`}>
+          <div className="absolute right-4 top-4">
+            {getWeatherIcon(weatherType, 'transition-transform duration-500 hover:scale-110')}
+          </div>
 
         <div className="flex flex-col h-full justify-between">
           <div>
@@ -216,36 +227,38 @@ export default function WeatherCards() {
             </h4>
             <p className="text-xs text-slate-400 leading-none mb-3">Canada</p>
 
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold tracking-tight text-slate-900 tabular-nums">
-                {Math.round(weather?.main?.temp ?? 0)}°
-              </span>
-              <span className="text-sm font-medium text-slate-500">
-                {weather?.weather?.[0]?.main}
-              </span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-bold tracking-tight text-slate-900 tabular-nums">
+                  {Math.round(weather?.main?.temp ?? 0)}°
+                </span>
+                <span className="text-sm font-medium text-slate-500">
+                  {weather?.weather?.[0]?.main}
+                </span>
+              </div>
             </div>
-          </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 space-y-2">
-            <div className="flex items-center justify-between">
-              <span>Feels like</span>
-              <span className="font-semibold text-slate-700 tabular-nums">{Math.round(weather?.main?.feels_like ?? 0)}°C</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5"><Droplets size={13} className="text-slate-400" /> Humidity</span>
-              <span className="font-semibold text-slate-700 tabular-nums">{weather?.main?.humidity ?? 0}%</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5"><Wind size={13} className="text-slate-400" /> Wind</span>
-              <span className="font-semibold text-slate-700 tabular-nums">{Math.round((weather?.wind?.speed ?? 0) * 3.6)} km/h</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>Pressure</span>
-              <span className="font-semibold text-slate-700 tabular-nums">{weather?.main?.pressure ?? 0} hPa</span>
+            <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-500 space-y-2">
+              <div className="flex items-center justify-between">
+                <span>Feels like</span>
+                <span className="font-semibold text-slate-700 tabular-nums">{Math.round(weather?.main?.feels_like ?? 0)}°C</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5"><Droplets size={13} className="text-slate-400" /> Humidity</span>
+                <span className="font-semibold text-slate-700 tabular-nums">{weather?.main?.humidity ?? 0}%</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5"><Wind size={13} className="text-slate-400" /> Wind</span>
+                <span className="font-semibold text-slate-700 tabular-nums">{Math.round((weather?.wind?.speed ?? 0) * 3.6)} km/h</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Pressure</span>
+                <span className="font-semibold text-slate-700 tabular-nums">{weather?.main?.pressure ?? 0} hPa</span>
+              </div>
+
+
             </div>
           </div>
         </div>
-      </div>
 
       {/* 1. OpenWeather TA2 Kitimat Heat Map Card */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-br bg-white border shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 from-slate-50/50 to-zinc-50/50 border-slate-200/60 hover:border-slate-300">
@@ -303,16 +316,16 @@ export default function WeatherCards() {
         </body>
         </html>
       `}
-            className="w-full h-[180px] border-none block"
-            sandbox="allow-scripts"
-          />
-          {/* Palette visual reference legend bar */}
-          <div className="absolute bottom-2 left-2 bg-white/90 backdrop-blur-xs px-1.5 py-0.5 rounded text-[8px] font-medium text-slate-500 border border-slate-200 flex items-center gap-1 z-10 pointer-events-none">
-            <div className="w-16 h-1.5 bg-gradient-to-r from-[#208cec] via-[#23dddd] via-[#c2ff28] to-[#fc8014] rounded-xs" />
-            Temp Palette
+              className="w-full h-[180px] border-none block"
+              sandbox="allow-scripts"
+            />
+            {/* Palette visual reference legend bar */}
+            <div className="absolute bottom-2 left-2 bg-white/90 backdrop-blur-xs px-1.5 py-0.5 rounded text-[8px] font-medium text-slate-500 border border-slate-200 flex items-center gap-1 z-10 pointer-events-none">
+              <div className="w-16 h-1.5 bg-gradient-to-r from-[#208cec] via-[#23dddd] via-[#c2ff28] to-[#fc8014] rounded-xs" />
+              Temp Palette
+            </div>
           </div>
         </div>
-      </div>
 
       {/* 2. Air Quality Card */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-br bg-white p-5 border shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 from-purple-50/50 to-indigo-50/50 border-purple-200/60 hover:border-purple-300">
@@ -323,143 +336,144 @@ export default function WeatherCards() {
             </h4>
             <p className="text-xs text-slate-400 leading-none mb-3">Kitimat, BC</p>
 
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold tracking-tight text-slate-900 tabular-nums">
-                {airQuality?.main?.aqi ?? '–'}
-              </span>
-              <span className="text-sm font-medium text-slate-500">AQI Index</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-bold tracking-tight text-slate-900 tabular-nums">
+                  {airQuality?.main?.aqi ?? '–'}
+                </span>
+                <span className="text-sm font-medium text-slate-500">AQI Index</span>
+              </div>
             </div>
-          </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 space-y-2 text-xs text-slate-500">
-            <div className="flex justify-between">
-              <span>PM2.5</span>
-              <span className="font-semibold text-slate-700 tabular-nums">{Math.round(airQuality?.components?.pm2_5 ?? 0)} µg/m³</span>
-            </div>
-            <div className="flex justify-between">
-              <span>PM10</span>
-              <span className="font-semibold text-slate-700 tabular-nums">{Math.round(airQuality?.components?.pm10 ?? 0)} µg/m³</span>
-            </div>
-            <div className="flex justify-between">
-              <span>O₃</span>
-              <span className="font-semibold text-slate-700 tabular-nums">{Math.round(airQuality?.components?.o3 ?? 0)} µg/m³</span>
-            </div>
-            <div className="flex justify-between">
-              <span>NO₂</span>
-              <span className="font-semibold text-slate-700 tabular-nums">{Math.round(airQuality?.components?.no2 ?? 0)} µg/m³</span>
+            <div className="mt-4 pt-3 border-t border-slate-100 space-y-2 text-xs text-slate-500">
+              <div className="flex justify-between">
+                <span>PM2.5</span>
+                <span className="font-semibold text-slate-700 tabular-nums">{Math.round(airQuality?.components?.pm2_5 ?? 0)} µg/m³</span>
+              </div>
+              <div className="flex justify-between">
+                <span>PM10</span>
+                <span className="font-semibold text-slate-700 tabular-nums">{Math.round(airQuality?.components?.pm10 ?? 0)} µg/m³</span>
+              </div>
+              <div className="flex justify-between">
+                <span>O₃</span>
+                <span className="font-semibold text-slate-700 tabular-nums">{Math.round(airQuality?.components?.o3 ?? 0)} µg/m³</span>
+              </div>
+              <div className="flex justify-between">
+                <span>NO₂</span>
+                <span className="font-semibold text-slate-700 tabular-nums">{Math.round(airQuality?.components?.no2 ?? 0)} µg/m³</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
 
 
-      {/* 4. Forecast Card */}
-<div className="relative overflow-hidden rounded-xl bg-gradient-to-br bg-white p-5 border shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 from-blue-50/50 to-indigo-50/50 border-blue-200/60 hover:border-blue-300">
-  <div className="flex flex-col h-full">
-    <h4 className="text-[11px] font-bold text-slate-500 tracking-[0.08em] uppercase leading-none mb-1">
-      Next 24 Hours
-    </h4>
-    <p className="text-xs text-slate-400 leading-none mb-3">3-hour intervals</p>
+        {/* 4. Forecast Card */}
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br bg-white p-5 border shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 from-blue-50/50 to-indigo-50/50 border-blue-200/60 hover:border-blue-300">
+          <div className="flex flex-col h-full">
+            <h4 className="text-[11px] font-bold text-slate-500 tracking-[0.08em] uppercase leading-none mb-1">
+              Next 24 Hours
+            </h4>
+            <p className="text-xs text-slate-400 leading-none mb-3">3-hour intervals</p>
 
-    <div
-      className="overflow-x-auto -mx-1 px-1 pb-1"
-      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-    >
-      {(() => {
-        const slotW = 46;
-        const slotGap = 4;
-        const totalW = forecast.length * slotW + (forecast.length - 1) * slotGap;
-        const firstColor = getTempColor(forecastChartData[0]?.temp ?? 10);
-
-        return (
-          <div style={{ width: totalW }}>
-            <AreaChart
-              width={totalW}
-              height={70}
-              data={forecastChartData}
-              margin={{ top: 5, right: 0, left: 0, bottom: 0 }}
+            <div
+              className="overflow-x-auto -mx-1 px-1 pb-1"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-              <defs>
-                {/* Horizontal gradient — colors by time position, each stop = one data point */}
-                <linearGradient id="strokeGradient" x1="0" y1="0" x2="1" y2="0">
-                  {forecastChartData.map((point, i) => (
-                    <stop
-                      key={i}
-                      offset={`${(i / Math.max(forecastChartData.length - 1, 1)) * 100}%`}
-                      stopColor={getTempColor(point.temp)}
-                    />
-                  ))}
-                </linearGradient>
-                {/* Fill fades from first point's temp color downward */}
-                <linearGradient id="fillGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={firstColor} stopOpacity={0.2} />
-                  <stop offset="100%" stopColor={firstColor} stopOpacity={0.02} />
-                </linearGradient>
-              </defs>
-              <Tooltip
-                labelFormatter={(_, payload) => payload?.[0]?.payload?.time ?? ''}
-                formatter={(value) => [`${value}°C`, 'Temperature']}
-                contentStyle={{
-                  borderRadius: '8px',
-                  border: '1px solid #e2e8f0',
-                  fontSize: '11px',
-                  padding: '6px 10px',
-                }}
-                itemStyle={{ color: '#475569' }}
-                labelStyle={{ color: '#94a3b8', marginBottom: '2px', fontSize: '10px' }}
-              />
-              <Area
-                type="monotone"
-                dataKey="temp"
-                stroke="url(#strokeGradient)"
-                strokeWidth={2}
-                fill="url(#fillGradient)"
-                dot={false}
-                activeDot={{ r: 3 }}
-              />
-            </AreaChart>
+              {(() => {
+                const slotW = 46;
+                const slotGap = 4;
+                const totalW = forecast.length * slotW + (forecast.length - 1) * slotGap;
+                const firstColor = getTempColor(forecastChartData[0]?.temp ?? 10);
 
-            <div className="border-t border-slate-100 my-2" />
-
-            <div className="flex" style={{ gap: slotGap }}>
-              {forecast.map((item: any) => {
-                const id = item.weather?.[0]?.id ?? 800;
-                const icon = getConditionIcon(id, item.wind?.speed ?? 0);
-                const tempColor = getTempColor(Math.round(item.main.temp));
-                const timezoneOffset = weather?.timezone ?? 0;
-                const date = new Date((item.dt + timezoneOffset) * 1000);
-                const hours = date.getUTCHours();
-                const ampm = hours >= 12 ? 'PM' : 'AM';
-                const displayHours = hours % 12 || 12;
                 return (
-                  <div
-                    key={item.dt}
-                    className="flex flex-col items-center gap-1.5 rounded-xl py-2"
-                    style={{ width: slotW, minWidth: slotW }}
-                  >
-                    <span className="text-[10px] font-semibold tabular-nums text-slate-400">
-                      {displayHours} {ampm}
-                    </span>
-                    <span className="flex items-center justify-center h-5">{icon}</span>
-                    {/* Temp number tinted with the same scale as the graph line */}
-                    <span
-                      className="text-xs font-bold tabular-nums"
-                      style={{ color: tempColor }}
+                  <div style={{ width: totalW }}>
+                    <AreaChart
+                      width={totalW}
+                      height={70}
+                      data={forecastChartData}
+                      margin={{ top: 5, right: 0, left: 0, bottom: 0 }}
                     >
-                      {Math.round(item.main.temp)}°
-                    </span>
+                      <defs>
+                        {/* Horizontal gradient — colors by time position, each stop = one data point */}
+                        <linearGradient id="strokeGradient" x1="0" y1="0" x2="1" y2="0">
+                          {forecastChartData.map((point, i) => (
+                            <stop
+                              key={i}
+                              offset={`${(i / Math.max(forecastChartData.length - 1, 1)) * 100}%`}
+                              stopColor={getTempColor(point.temp)}
+                            />
+                          ))}
+                        </linearGradient>
+                        {/* Fill fades from first point's temp color downward */}
+                        <linearGradient id="fillGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={firstColor} stopOpacity={0.2} />
+                          <stop offset="100%" stopColor={firstColor} stopOpacity={0.02} />
+                        </linearGradient>
+                      </defs>
+                      <Tooltip
+                        labelFormatter={(_, payload) => payload?.[0]?.payload?.time ?? ''}
+                        formatter={(value) => [`${value}°C`, 'Temperature']}
+                        contentStyle={{
+                          borderRadius: '8px',
+                          border: '1px solid #e2e8f0',
+                          fontSize: '11px',
+                          padding: '6px 10px',
+                        }}
+                        itemStyle={{ color: '#475569' }}
+                        labelStyle={{ color: '#94a3b8', marginBottom: '2px', fontSize: '10px' }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="temp"
+                        stroke="url(#strokeGradient)"
+                        strokeWidth={2}
+                        fill="url(#fillGradient)"
+                        dot={false}
+                        activeDot={{ r: 3 }}
+                      />
+                    </AreaChart>
+
+                    <div className="border-t border-slate-100 my-2" />
+
+                    <div className="flex" style={{ gap: slotGap }}>
+                      {forecast.map((item: any) => {
+                        const id = item.weather?.[0]?.id ?? 800;
+                        const icon = getConditionIcon(id, item.wind?.speed ?? 0);
+                        const tempColor = getTempColor(Math.round(item.main.temp));
+                        const timezoneOffset = weather?.timezone ?? 0;
+                        const date = new Date((item.dt + timezoneOffset) * 1000);
+                        const hours = date.getUTCHours();
+                        const ampm = hours >= 12 ? 'PM' : 'AM';
+                        const displayHours = hours % 12 || 12;
+                        return (
+                          <div
+                            key={item.dt}
+                            className="flex flex-col items-center gap-1.5 rounded-xl py-2"
+                            style={{ width: slotW, minWidth: slotW }}
+                          >
+                            <span className="text-[10px] font-semibold tabular-nums text-slate-400">
+                              {displayHours} {ampm}
+                            </span>
+                            <span className="flex items-center justify-center h-5">{icon}</span>
+                            {/* Temp number tinted with the same scale as the graph line */}
+                            <span
+                              className="text-xs font-bold tabular-nums"
+                              style={{ color: tempColor }}
+                            >
+                              {Math.round(item.main.temp)}°
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 );
-              })}
+              })()}
             </div>
           </div>
-        );
-      })()}
-    </div>
-  </div>
-</div>
+        </div>
 
+      </div>
     </div>
   );
 }

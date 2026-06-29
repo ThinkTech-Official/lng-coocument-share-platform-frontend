@@ -132,16 +132,6 @@ export default function NotificationsPage() {
           })}
         </div>
       )}
-
-      {/* General HSE Info Footnote (Preserved from original design) */}
-      <div className="text-xs text-lng-grey space-y-3 leading-relaxed pt-4 border-t border-gray-100">
-        <p>
-          Protection of both the health and well-being of all employees and contractors and protection of the environment are of utmost concern to LNG Canada. To effectively manage contractor HSE performance, we utilize the Contractor HSE Management Process (CSMP).
-        </p>
-        <p>
-          This process describes the identification, assessment, and control of HSE-related risk incurred by using contractors to provide services.
-        </p>
-      </div>
     </div>
   );
 }
