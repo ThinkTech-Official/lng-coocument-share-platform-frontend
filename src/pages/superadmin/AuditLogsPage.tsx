@@ -483,7 +483,7 @@ export default function AuditLogsPage() {
             <input
               type="date"
               value={localDateFrom}
-              max={localDateTo || undefined}
+              max={localDateTo || '9999-12-31'}
               onChange={(e) => handleDateChange(e.target.value, 'date_from', setLocalDateFrom, dateFromDebounce)}
               onBlur={(e) => handleDateBlur(e.target.value, 'date_from', dateFromDebounce)}
               className={selectCls}
@@ -497,6 +497,7 @@ export default function AuditLogsPage() {
               type="date"
               value={localDateTo}
               min={localDateFrom || undefined}
+              max="9999-12-31"
               onChange={(e) => handleDateChange(e.target.value, 'date_to', setLocalDateTo, dateToDebounce)}
               onBlur={(e) => handleDateBlur(e.target.value, 'date_to', dateToDebounce)}
               className={selectCls}

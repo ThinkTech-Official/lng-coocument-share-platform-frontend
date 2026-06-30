@@ -340,7 +340,7 @@ export default function ContractorLayout() {
                 <>
                   {/* Items directly in this subcategory */}
                   {sub.items.length > 0 && (
-                    <ul className="space-y-1.5 pl-5 mb-2">
+                    <ul className="space-y-1.5 pl-7 mb-2">
                       {sub.items.map((item) => renderSidebarItem(item))}
                     </ul>
                   )}
@@ -354,7 +354,7 @@ export default function ContractorLayout() {
                       <div key={child.id} className="mt-1.5 pl-4">
                         <h5
                           onClick={() => toggleSection(childKey)}
-                          className="flex items-center gap-1 text-[13px] font-semibold text-lng-blue uppercase tracking-wider mb-1 cursor-pointer select-none hover:text-lng-blue/80 transition-colors"
+                          className="flex items-center gap-1 text-[13px] ml-1 font-semibold text-lng-blue uppercase tracking-wider mb-1 cursor-pointer select-none hover:text-lng-blue/80 transition-colors"
                         >
                           <ChevronDown
                             size={12}
@@ -364,7 +364,7 @@ export default function ContractorLayout() {
                           {child.label}
                         </h5>
                         {!isChildCollapsed && (
-                          <ul className="space-y-1.5 pl-4">
+                          <ul className="space-y-1.5 pl-7">
                             {child.items.map((item) => renderSidebarItem(item))}
                           </ul>
                         )}
